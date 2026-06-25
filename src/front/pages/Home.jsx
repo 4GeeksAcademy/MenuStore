@@ -1,23 +1,49 @@
-import React, { useEffect } from "react"
-import rigoImageUrl from "../assets/img/rigo-baby.jpg";
+import React from "react";
 import useGlobalReducer from "../hooks/useGlobalReducer.jsx";
 
 export const Home = () => {
-
-	const { store, dispatch } = useGlobalReducer()
-
+	const { store, dispatch } = useGlobalReducer();
 
 	return (
-		<div className="container mt-5 ">
-			<div className="row">
-				<img src="" alt="" />
-			</div>
-			<div className="row">
-				hola
-			</div>
-			<div className="row">
-				jaja
+		<div className="bg-light d-flex justify-content-center align-items-center vh-100">
+			<div className="card shadow p-4" style={{ width: "350px" }}>
+				<h3 className="text-center mb-4">Iniciar Sesión</h3>
+
+				<form>
+					<div className="mb-3">
+						<label className="form-label">Usuario</label>
+						<input
+							type="text"
+							className="form-control"
+							placeholder="Ingresa tu usuario"
+						/>
+					</div>
+
+					<div className="mb-4">
+						<label className="form-label">Contraseña</label>
+						<input
+							type="password"
+							className="form-control"
+							placeholder="Ingresa tu contraseña"
+						/>
+					</div>
+
+					<button type="submit" className="btn btn-primary w-100">
+						Ingresar
+					</button>
+
+					<div className="text-center mt-3">
+						<span className="text-muted">
+							¿No estás registrado?{" "}
+						</span>
+
+						<a href="#" className="text-decorartion-none fw-semibold">
+							Regístrate aquí
+						</a> 
+					</div>
+
+				</form>
 			</div>
 		</div>
 	);
-}; 
+};
