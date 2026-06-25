@@ -38,7 +38,7 @@ export const Home = () => {
 							¿No estás registrado?{" "}
 						</span>
 
-						<Link to={"/register"} className="text-decorartion-none fw-semibold">
+						<Link to={"/register"} className="text-decoration-none fw-semibold">
 							Regístrate aquí
 						</Link> 
 					
