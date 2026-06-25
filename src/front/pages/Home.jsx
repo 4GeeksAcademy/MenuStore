@@ -1,5 +1,6 @@
 import React from "react";
 import useGlobalReducer from "../hooks/useGlobalReducer.jsx";
+import { Link } from "react-router-dom"
 
 export const Home = () => {
 	const { store, dispatch } = useGlobalReducer();
@@ -37,9 +38,10 @@ export const Home = () => {
 							¿No estás registrado?{" "}
 						</span>
 
-						<a href="#" className="text-decorartion-none fw-semibold">
+						<Link to={"/register"} className="text-decorartion-none fw-semibold">
 							Regístrate aquí
-						</a> 
+						</Link> 
+					
 					</div>
 
 				</form>

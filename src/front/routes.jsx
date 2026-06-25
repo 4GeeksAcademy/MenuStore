@@ -22,6 +22,7 @@ export const router = createBrowserRouter(
 
         <Route path= "/" element={<Home />} />
         <Route path= "/register" element={<Register />} />
+        
       </Route>
     )
 );
