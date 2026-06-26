@@ -2,10 +2,10 @@ import { Link } from "react-router-dom"
 
 const Register = () => {
 
-    return (<div className="container">
+    return (<div className="bg-light d-flex justify-content-center align-items-center vh-100">
         <div className="card text-center mt-5">
             <div className="card-header">
-                Register User
+                <h3>Register User</h3>
             </div>
             <div className="card-body">
                 <div class="mb-3">

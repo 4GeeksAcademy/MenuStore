@@ -2,7 +2,7 @@ import React from "react";
 import useGlobalReducer from "../hooks/useGlobalReducer.jsx";
 import { Link } from "react-router-dom"
 
-export const Home = () => {
+export const Login = () => {
 	const { store, dispatch } = useGlobalReducer();
 
 	return (
