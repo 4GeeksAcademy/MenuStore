@@ -6,7 +6,7 @@ import {
     Route,
 } from "react-router-dom";
 import { Layout } from "./pages/Layout";
-import { Home } from "./pages/Home";
+import { Login } from "./pages/Login";
 import Register from "./pages/Register"
 
 export const router = createBrowserRouter(
@@ -20,7 +20,7 @@ export const router = createBrowserRouter(
       // Root Route: All navigation will start from here.
       <Route path="/" element={<Layout />} errorElement={<h1>Not found!</h1>} >
 
-        <Route path= "/" element={<Home />} />
+        <Route path= "/" element={<Login />} />
         <Route path= "/register" element={<Register />} />
         
       </Route>
