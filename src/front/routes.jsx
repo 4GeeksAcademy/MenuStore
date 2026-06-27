@@ -9,6 +9,7 @@ import { Layout } from "./pages/Layout";
 import { Home } from "./pages/Home";
 import Register from "./pages/Register"
 import { StorePreview } from "./pages/StorePreview.jsx";
+import { EditStore } from "./pages/EditStore.jsx";
 
 export const router = createBrowserRouter(
     createRoutesFromElements(
@@ -23,6 +24,7 @@ export const router = createBrowserRouter(
         <Route path= "/" element={<Home />} />
         <Route path= "/register" element={<Register />} />
         <Route path="/storePreview" element={< StorePreview />} />
+        <Route path="/editStore" element={<EditStore />} />
         
       </Route>
     )

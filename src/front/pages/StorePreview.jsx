@@ -1,6 +1,29 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 
 export const StorePreview = () => {
+    const [storeData, setStoreData] = useState({
+        shopName: "Shop Name",
+        logoUrl: "https://placehold.co/200x150?text=Logo",
+        categories: ["Category"],
+        products: [
+            {
+                id: 1,
+                name: "Producto ejemplo",
+                image: "https://placehold.co/220x160?text=Producto",
+                description: "Descripción del producto",
+                price: "$0.00"
+            }
+        ]
+    });
+
+    useEffect(() => {
+        const savedData = localStorage.getItem("storeData");
+
+        if (savedData){
+            setStoreData(JSON.parse(savedData));
+        }
+    }, []);
+
     return (
         <div className="bg-light min-vh-100 py-4">
             <div className="container bg-white shadow rounded p-0">
