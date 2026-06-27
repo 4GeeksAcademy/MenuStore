@@ -8,6 +8,7 @@ import {
 import { Layout } from "./pages/Layout";
 import { Login } from "./pages/Login";
 import Register from "./pages/Register"
+import ShopAdminView from "./pages/ShopAdminView";
 
 export const router = createBrowserRouter(
     createRoutesFromElements(
@@ -22,6 +23,7 @@ export const router = createBrowserRouter(
 
         <Route path= "/" element={<Login />} />
         <Route path= "/register" element={<Register />} />
+        <Route path= "/adminShop" element={<ShopAdminView />} />
         
       </Route>
     )
