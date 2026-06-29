@@ -1,13 +1,13 @@
 import { Outlet } from "react-router-dom"
 import ScrollToTop from "../components/ScrollToTop"
-import User from "../pages/User"
+import MiniUser from "./MiniUser"
 
 
 // Base component that maintains the navbar and footer throughout the page and the scroll to top functionality.
 export const Layout = () => {
     return (
         <ScrollToTop>
-            <User />
+            <MiniUser />
             <Outlet />
         </ScrollToTop>
     )
