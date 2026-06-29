@@ -23,7 +23,7 @@ const Register = () => {
                 <Link to={""} className="btn btn-success">Register</Link>
             </div>
             <div className="card-footer text-body-secondary">
-                <Link to={"/"}>Did you register???</Link>
+                <Link to={"/login"}>Did you register???</Link>
             </div>
         </div>
     </div>

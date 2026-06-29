@@ -7,7 +7,9 @@ import {
 } from "react-router-dom";
 import { Layout } from "./pages/Layout";
 import { Login } from "./pages/Login";
-import Register from "./pages/Register"
+import Register from "./pages/Register";
+import ShopAdminView from "./pages/ShopAdminView";
+import {StorePreview} from "./pages/StorePreview";
 
 export const router = createBrowserRouter(
     createRoutesFromElements(
@@ -19,8 +21,11 @@ export const router = createBrowserRouter(
       // Root Route: All navigation will start from here.
       <Route path="/" element={<Layout />} errorElement={<h1>Not found!</h1>} >
 
-        <Route path= "/" element={<Login />} />
+        <Route path= "/login" element={<Login />} />
         <Route path= "/register" element={<Register />} />
+        <Route path="/" element={<StorePreview />} />
+
+        <Route path= "/admin-shop" element={<ShopAdminView />} />
         
       </Route>
     )

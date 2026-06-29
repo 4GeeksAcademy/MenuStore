@@ -32,7 +32,7 @@ const ShopAdminView = () => {
                     <input type="text" placeholder="Name Shop" />
                 </div>
                 <div className="col-9 d-flex justify-content-end">
-                    <button type="button" className="btn btn-secondary mt-auto">Edit Name</button>
+                    <button type="button" className="btn btn-secondary mt-auto">Save Name</button>
                 </div>
             </div>
             <div className="row border-bottom py-4">
