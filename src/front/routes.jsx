@@ -7,12 +7,14 @@ import {
 } from "react-router-dom";
 import { Layout } from "./pages/Layout";
 import { Login } from "./pages/Login";
-import Register from "./pages/Register"
-
+import Register from "./pages/Register";
+import ShopAdminView from "./pages/ShopAdminView";
+import { StorePreview } from "./pages/StorePreview";
+import UserView from "./pages/UserView";
 
 export const router = createBrowserRouter(
   createRoutesFromElements(
-  
+   
     <Route path="/" errorElement={<h1>Not found!</h1>}>
       
       <Route path="login" element={<Login />} />
