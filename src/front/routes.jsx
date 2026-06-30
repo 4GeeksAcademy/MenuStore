@@ -11,12 +11,13 @@ import Register from "./pages/Register";
 import ShopAdminView from "./pages/ShopAdminView";
 import { StorePreview } from "./pages/StorePreview";
 import UserView from "./pages/UserView";
+import { EditStore } from "./pages/EditStore";
 
 export const router = createBrowserRouter(
   createRoutesFromElements(
-   
+
     <Route path="/" errorElement={<h1>Not found!</h1>}>
-      
+
       <Route path="login" element={<Login />} />
       <Route path="register" element={<Register />} />
 
@@ -24,6 +25,7 @@ export const router = createBrowserRouter(
         <Route index element={<StorePreview />} />
         <Route path="user-view" element={<UserView />} />
         <Route path="admin-shop" element={<ShopAdminView />} />
+        <Route path="/editStore/:categoryName" element={<EditStore />} />
       </Route>
 
     </Route>
