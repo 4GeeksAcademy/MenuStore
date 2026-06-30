@@ -7,11 +7,7 @@ import {
 } from "react-router-dom";
 import { Layout } from "./pages/Layout";
 import { Login } from "./pages/Login";
-import Register from "./pages/Register";
-import ShopAdminView from "./pages/ShopAdminView";
-import { StorePreview } from "./pages/StorePreview";
-import User from "./pages/MiniUser";
-import UserView from "./pages/UserView";
+import Register from "./pages/Register"
 
 export const router = createBrowserRouter(
   createRoutesFromElements(
