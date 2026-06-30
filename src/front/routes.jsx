@@ -8,8 +8,6 @@ import {
 import { Layout } from "./pages/Layout";
 import { Login } from "./pages/Login";
 import Register from "./pages/Register"
-import { StorePreview } from "./pages/StorePreview";
-import { EditStore } from "./pages/EditStore";
 
 export const router = createBrowserRouter(
   createRoutesFromElements(
@@ -18,14 +16,12 @@ export const router = createBrowserRouter(
     // Root, on the contrary, create a sister Route, if you have doubts, try it!
     // Note: keep in mind that errorElement will be the default page when you don't get a route, customize that page to make your project more attractive.
     // Note: The child paths of the Layout element replace the Outlet component with the elements contained in the "element" attribute of these child paths.
-    // Root Route: All navigation will start from here.
-    <Route path="/" element={<Layout />} errorElement={<h1>Not found!</h1>} >
+      // Root Route: All navigation will start from here.
+      <Route path="/" element={<Layout />} errorElement={<h1>Not found!</h1>} >
 
-      <Route path="/" element={<Login />} />
-      <Route path="/register" element={<Register />} />
-      <Route path="/storePreview" element={<StorePreview />} />
-      <Route path="/editStore/:categoryName" element={<EditStore />} />
-
-    </Route>
-  )
+        <Route path= "/" element={<Login />} />
+        <Route path= "/register" element={<Register />} />
+        
+      </Route>
+    )
 );
