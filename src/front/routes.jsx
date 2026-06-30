@@ -8,7 +8,7 @@ import {
 import { Layout } from "./pages/Layout";
 import { Login } from "./pages/Login";
 import Register from "./pages/Register"
-import 
+
 
 export const router = createBrowserRouter(
   createRoutesFromElements(
