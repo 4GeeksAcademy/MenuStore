@@ -20,7 +20,7 @@ const Register = () => {
                     <label for="user" className="form-label">User Name</label>
                     <input type="text" className="form-control" id="user" aria-describedby="userHelp"/>
                 </div>
-                <Link to={""} className="btn btn-success">Register</Link>
+                <Link to={"/login"} className="btn btn-success">Register</Link>
             </div>
             <div className="card-footer text-body-secondary">
                 <Link to={"/login"}>Did you register???</Link>
