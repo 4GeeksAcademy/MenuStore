@@ -35,7 +35,7 @@ export const Login = () => {
 
 					<div className="text-center mt-3">
 						<span className="text-muted">
-							¿No estás registrado?{" "}
+							¿No estás registrado?
 						</span>
 
 						<Link to={"/register"} className="text-decoration-none fw-semibold">
