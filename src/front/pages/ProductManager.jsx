@@ -83,128 +83,159 @@ export const ProductManager = () => {
   };
 
   return (
-    <div className="bg-light min-vh-100 py-4">
-      <div className="container bg-white shadow rounded p-4">
-        <div className="d-flex justify-content-between align-items-center mb-4">
-          <Link
-            to="/admin-shop"
-            className="btn btn-outline-dark"
-          >
-            Volver
-          </Link>
+    <div className="bg-light min-vh-100">
+    <nav className="navbar navbar-dark bg-dark shadow-sm px-4 justify-content-between">
+      <h5 className="text-white m-0">
+        Product Manager
+      </h5>
 
-        </div>
+      <Link to="/admin-shop" className="btn btn-outline-light">
+        Volver
+      </Link>
+    </nav>
 
-        <h2 className="text-center text-capitalize mb-4">
+    <div className="container bg-white shadow rounded my-4 p-0">
+      <div className="text-center py-5 px-3">
+        <img
+          src={productImage || "https://placehold.co/220x160?text=Product"}
+          alt="Product preview"
+          className="img-fluid rounded-4 shadow-sm mb-3"
+          style={{ width: "220px", height: "160px", objectFit: "cover" }}
+        />
+
+        <h1 className="fw-bold text-capitalize">
           {categoryName}
-        </h2>
+        </h1>
 
-        <div className="text-center mb-4">
-          <img
-            src={productImage || "https://placehold.co/260x180?text=Product+Image"}
-            alt="Product preview"
-            className="img-fluid"
-            style={{ width: "260px", height: "180px", objectFit: "cover" }}
-          />
+        <p className="text-muted mb-0">
+          Agrega, edita o elimina productos de esta categoría.
+        </p>
+      </div>
+
+      <div className="p-4">
+        <div className="border rounded-4 shadow-sm mb-4 p-4 bg-white">
+          <span className="badge bg-dark mb-2">
+            Producto
+          </span>
+
+          <h5 className="fw-bold mb-3">
+            {editingId ? "Editar producto" : "Agregar nuevo producto"}
+          </h5>
+
+          <div className="mb-3">
+            <label className="form-label">URL de imagen</label>
+            <input
+              type="text"
+              className="form-control"
+              placeholder="Product Image URL"
+              value={productImage}
+              onChange={(e) => setProductImage(e.target.value)}
+            />
+          </div>
+
+          <div className="mb-3">
+            <label className="form-label">Nombre del producto</label>
+            <input
+              type="text"
+              className="form-control"
+              placeholder="Product Name"
+              value={productName}
+              onChange={(e) => setProductName(e.target.value)}
+            />
+          </div>
+
+          <div className="mb-3">
+            <label className="form-label">Precio</label>
+            <input
+              type="text"
+              className="form-control"
+              placeholder="Price"
+              value={productPrice}
+              onChange={(e) => setProductPrice(e.target.value)}
+            />
+          </div>
+
+          <div className="mb-4">
+            <label className="form-label">Detalles</label>
+            <textarea
+              className="form-control"
+              rows="3"
+              placeholder="Details"
+              value={productDetails}
+              onChange={(e) => setProductDetails(e.target.value)}
+            ></textarea>
+          </div>
+
+          <div className="d-flex justify-content-end gap-2">
+            <button
+              className="btn btn-outline-primary rounded-pill px-4"
+              onClick={clearForm}
+            >
+              Cancel
+            </button>
+
+            <button
+              className="btn btn-primary rounded-pill px-4"
+              onClick={saveProduct}
+            >
+              {editingId ? "Update" : "Save"}
+            </button>
+          </div>
         </div>
 
-        <div className="border-top border-dark py-3">
-          <input
-            type="text"
-            className="form-control w-25"
-            placeholder="Product Image URL"
-            value={productImage}
-            onChange={(e) => setProductImage(e.target.value)}
-          />
-        </div>
-
-        <div className="border-top border-dark py-3">
-          <input
-            type="text"
-            className="form-control w-25"
-            placeholder="Product Name"
-            value={productName}
-            onChange={(e) => setProductName(e.target.value)}
-          />
-        </div>
-
-        <div className="border-top border-dark py-3 d-flex align-items-center gap-3">
-          <input
-            type="text"
-            className="form-control w-25"
-            placeholder="Price"
-            value={productPrice}
-            onChange={(e) => setProductPrice(e.target.value)}
-          />
-
-          <span className="fs-4 fw-bold">$</span>
-        </div>
-
-        <div className="border-top border-dark py-3">
-          <textarea
-            className="form-control text-center"
-            rows="3"
-            placeholder="Details"
-            value={productDetails}
-            onChange={(e) => setProductDetails(e.target.value)}
-          ></textarea>
-        </div>
-
-        <div className="border-top border-dark py-4 d-flex justify-content-center gap-3">
-          <button
-            className="btn btn-secondary px-5 py-3"
-            onClick={clearForm}
-          >
-            Cancel
-          </button>
-
-          <button
-            className="btn btn-dark px-5 py-3"
-            onClick={saveProduct}
-          >
-            {editingId ? "Update" : "Save"}
-          </button>
-        </div>
-
-        <hr />
-
-        <h4 className="mb-3">Productos guardados</h4>
+        <h4 className="mb-3">
+          Productos guardados
+        </h4>
 
         {products.length === 0 ? (
-          <p className="text-muted">
-            Todavía no hay productos en esta categoría.
-          </p>
+          <div className="text-center py-5 border rounded-4">
+            <p className="text-muted mb-0">
+              Todavía no hay productos en esta categoría.
+            </p>
+          </div>
         ) : (
           products.map((product) => (
             <div
               key={product.id}
-              className="row align-items-center border-bottom py-3"
+              className="product-card row align-items-center border rounded-4 shadow-sm mb-4 p-3 bg-white"
             >
               <div className="col-md-2">
                 <img
                   src={product.image || "https://placehold.co/120x90?text=Product"}
                   alt={product.name}
-                  className="img-fluid rounded"
+                  className="img-fluid rounded-4 shadow-sm"
                   style={{ width: "120px", height: "90px", objectFit: "cover" }}
                 />
               </div>
 
               <div className="col-md-6">
-                <h5>{product.name}</h5>
-                <p className="mb-1">{product.details}</p>
-                <strong>${product.price}</strong>
+                <span className="badge bg-success mb-2 text-capitalize">
+                  {categoryName}
+                </span>
+
+                <h5 className="fw-bold mb-1">
+                  {product.name}
+                </h5>
+
+                <p className="text-muted mb-1">
+                  {product.details}
+                </p>
+
+                <strong className="text-success">
+                  ${product.price}
+                </strong>
               </div>
 
-              <div className="col-md-4 text-end">
+              <div className="col-md-4 text-md-end mt-3 mt-md-0">
                 <button
-                  className="btn btn-warning me-2"
+                  className="btn btn-outline-primary rounded-pill px-4 me-2"
                   onClick={() => editProduct(product)}
                 >
                   Edit
                 </button>
 
                 <button
-                  className="btn btn-danger"
+                  className="btn btn-danger rounded-pill px-4"
                   onClick={() => deleteProduct(product.id)}
                 >
                   Delete
@@ -214,6 +245,14 @@ export const ProductManager = () => {
           ))
         )}
       </div>
+
+      <footer className="bg-dark text-white text-center py-3 rounded-bottom">
+        <small>
+          Product Manager - MenuStore
+        </small>
+      </footer>
     </div>
-  );
+  </div>
+);
+
 };
