@@ -1,31 +1,45 @@
 import { Link } from "react-router-dom";
 import UseGlobalReducer from "../hooks/useGlobalReducer";
+import { useState } from "react";
 
 
-const ProductItem = () => {
+const ProductItem = ({ id, imgUrl, name, price, details }) => {
+
+    const [quantity, setQuantity] = useState(1);
+
     return <div className="row align-items-center border-bottom py-3 mx-0">
         <div className="col-md-2 text-center text-md-start">
             <img
-                src="https://placehold.co"
-                alt="Producto de prueba"
+                src={imgUrl}
+                alt={name}
                 className="img-fluid rounded"
                 style={{ width: "120px", height: "90px", objectFit: "cover" }}
             />
         </div>
 
         <div className="col-md-4 mt-2 mt-md-0">
-            <h5>Producto de Ejemplo</h5>
-            <p className="text-muted small mb-0">Descripción breve del producto seleccionado.</p>
+            <h5>{name}</h5>
+            <p className="text-muted small mb-0">{details}</p>
         </div>
 
         <div className="col-md-3 mt-2 mt-md-0 d-flex justify-content-center align-items-center gap-2">
-            <button className="btn btn-outline-dark btn-sm px-2">-</button>
-            <span className="fs-5 px-2 fw-semibold">1</span>
-            <button className="btn btn-outline-dark btn-sm px-2">+</button>
+            <button
+                className="btn btn-outline-dark btn-sm px-2"
+                onClick={() => setQuantity(Math.max(1, quantity - 1))}
+            >
+                -
+            </button>
+            <span className="fs-5 px-2 fw-semibold">{quantity}</span>
+            <button
+                className="btn btn-outline-dark btn-sm px-2"
+                onClick={() => setQuantity(quantity + 1)}
+            >
+                +
+            </button>
         </div>
 
         <div className="col-md-3 mt-2 mt-md-0 text-center text-md-end">
-            <span className="fs-5 fw-bold d-block mb-1">$99.99</span>
+            <span className="fs-5 fw-bold d-block mb-1">${(price * quantity).toFixed(2)}</span>
             <button className="btn btn-outline-danger btn-sm">Eliminar</button>
         </div>
     </div>
@@ -47,7 +61,7 @@ const ShoppingCart = () => {
             <div>
                 <div className="border-top border-dark">
                     {store.cartItems.map((item) => (
-                        <ProductItem key={item.id} />
+                        <ProductItem key={item.id} id={item.id} imgUrl={item.imgUrl} name={item.name} price={item.price} details={item.details} />
                     ))}
                 </div>
 
