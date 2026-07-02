@@ -1,4 +1,4 @@
-
+import { Link } from "react-router-dom"; // agregue esto yisselle ver comentarios de abajo en edit products
 
 const ShopAdminView = () => {
 
@@ -56,7 +56,12 @@ const ShopAdminView = () => {
                             <button type="button" className="btn btn-primary">Products</button>
                         </div>
                         <div className="col-auto">
-                            <button type="button" className="btn btn-secondary">Edit Products</button>
+                            <Link
+                                to="/product-manager/general" // cambie edit products 
+                                className="btn btn-secondary" // solamente esta parte para que lleve a mi pestana de editar Product
+                            >
+                                Edit Products
+                            </Link>
                         </div>
                     </div>
                 </div>

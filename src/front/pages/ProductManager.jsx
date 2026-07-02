@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
-export const EditStore = () => {
+export const ProductManager = () => {
   const { categoryName } = useParams();
 
   const [products, setProducts] = useState([]);
@@ -86,15 +86,17 @@ export const EditStore = () => {
     <div className="bg-light min-vh-100 py-4">
       <div className="container bg-white shadow rounded p-4">
         <div className="d-flex justify-content-between align-items-center mb-4">
-          <Link to="/storePreview" className="btn btn-outline-dark">
+          <Link
+            to="/admin-shop"
+            className="btn btn-outline-dark"
+          >
             Volver
           </Link>
 
-          <button className="btn btn-dark">UserName</button>
         </div>
 
         <h2 className="text-center text-capitalize mb-4">
-          Editar categoría: {categoryName}
+          {categoryName}
         </h2>
 
         <div className="text-center mb-4">

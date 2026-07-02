@@ -9,9 +9,9 @@ import { Layout } from "./pages/Layout";
 import { Login } from "./pages/Login";
 import Register from "./pages/Register";
 import ShopAdminView from "./pages/ShopAdminView";
-import { StorePreview } from "./pages/StorePreview";
-import UserView from "./pages/UserView";
-import { EditStore } from "./pages/EditStore";
+import { CustomerHome } from "./pages/CustomerHome"; // revisar
+import UserView from "./pages/UserView"; // revisar
+import { ProductManager } from "./pages/ProductManager"; // acutalizar yisselle
 
 export const router = createBrowserRouter(
   createRoutesFromElements(
@@ -22,12 +22,11 @@ export const router = createBrowserRouter(
       <Route path="register" element={<Register />} />
 
       <Route element={<Layout />}>
-        <Route index element={<StorePreview />} />
+        <Route index element={<CustomerHome />} />
         <Route path="user-view" element={<UserView />} />
         <Route path="admin-shop" element={<ShopAdminView />} />
-        <Route path="/editStore/:categoryName" element={<EditStore />} />
+        <Route path="product-manager/:categoryName" element={<ProductManager />} />
       </Route>
-
     </Route>
   )
 );
