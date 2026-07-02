@@ -1,4 +1,4 @@
-import {Link} from "react-router-dom";
+import { Link } from "react-router-dom";
 
 const MiniUser = () => {
 
@@ -14,8 +14,23 @@ const MiniUser = () => {
                                         UserName
                                     </button>
                                     <ul className="dropdown-menu">
-                                        <li><div className="dropdown-item" ><Link to="/user-view">View User</Link></div></li>
-                                        <li><div className="dropdown-item" ><Link to="/shopping-cart">Shopping Cart</Link></div></li>
+                                        <li>
+                                            <div className="dropdown-item" >
+                                                <Link to="/user-view">
+                                                    View User
+                                                </Link>
+                                            </div>
+                                        </li>
+                                        <li>
+                                            <div className="dropdown-item" >
+                                                <Link to="/shopping-cart">
+                                                    Shopping Cart
+                                                </Link>
+                                                <div>
+                                                    0
+                                                </div>
+                                            </div>
+                                        </li>
                                     </ul>
                                 </div>
                             </li>

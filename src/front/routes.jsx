@@ -12,6 +12,7 @@ import ShopAdminView from "./pages/ShopAdminView";
 import { CustomerHome } from "./pages/CustomerHome"; // revisar
 import UserView from "./pages/UserView"; // revisar
 import { ProductManager } from "./pages/ProductManager"; // acutalizar yisselle
+import ShoppingCart from "./pages/ShoppingCart";
 
 export const router = createBrowserRouter(
   createRoutesFromElements(
@@ -20,13 +21,14 @@ export const router = createBrowserRouter(
 
       <Route path="login" element={<Login />} />
       <Route path="register" element={<Register />} />
-      
+
       <Route path="admin-shop" element={<ShopAdminView />} />
       <Route path="product-manager/:categoryName" element={<ProductManager />} />
 
       <Route element={<Layout />}>
         <Route index element={<CustomerHome />} />
         <Route path="user-view" element={<UserView />} />
+        <Route path="shopping-cart" element={<ShoppingCart />} />
       </Route>
     </Route>
   )

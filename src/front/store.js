@@ -1,20 +1,30 @@
-export const initialStore=()=>{
-  return{
-    message: null,
-    todos: [
-      {
-        id: 1,
-        title: "Make the bed",
-        background: null,
-      },
-      {
-        id: 2,
-        title: "Do my homework",
-        background: null,
-      }
-    ]
-  }
-}
+export const initialStore = () => ({
+  cartItems: [
+    {
+      id: 1,
+      name: 'Hamburguesa',
+      price: 9.99,
+      quantity: 1,
+      image: 'https://placehold.co/120x90'
+    },
+    {
+      id: 2,
+      name: 'Pizza',
+      price: 12.99,
+      quantity: 1,
+      image: 'https://placehold.co/120x90'
+    },
+    {
+      id: 3,
+      name: 'Ensalada',
+      price: 7.99,
+      quantity: 1,
+      image: 'https://placehold.co/120x90'
+    }
+  ],
+  favorites: [],
+  clients: []
+})
 
 export default function storeReducer(store, action = {}) {
   switch(action.type){
