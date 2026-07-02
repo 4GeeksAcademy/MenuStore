@@ -3,28 +3,49 @@ import { Link } from "react-router-dom"
 const Register = () => {
 
     return (<div className="bg-light d-flex justify-content-center align-items-center vh-100">
-        <div className="card text-center mt-5">
-            <div className="card-header">
-                <h3>Register User</h3>
-            </div>
-            <div className="card-body">
-                <div class="mb-3">
-                    <label for="email" className="form-label">Email address</label>
-                    <input type="email" className="form-control" id="email" aria-describedby="emailHelp"/>
+        <div className="card shadow p-4" style={{ width: "360px" }}>
+            <h3 className="text-center mb-4">Registro de Usuario</h3>
+
+            <form>
+                <div className="mb-3">
+                    <label className="form-label">Nombre de Usuario</label>
+                    <input
+                        type="text"
+                        className="form-control"
+                        placeholder="Ingresa tu usuario"
+                    />
                 </div>
-                <div class="mb-3">
-                    <label for="password" className="form-label">Password</label>
-                    <input type="password" className="form-control" id="password" aria-describedby="passwordHelp"/>
+
+                <div className="mb-3">
+                    <label className="form-label">Correo Electrónico</label>
+                    <input
+                        type="email"
+                        className="form-control"
+                        placeholder="Ingresa tu correo"
+                    />
                 </div>
-                <div class="mb-3">
-                    <label for="user" className="form-label">User Name</label>
-                    <input type="text" className="form-control" id="user" aria-describedby="userHelp"/>
+
+                <div className="mb-4">
+                    <label className="form-label">Contraseña</label>
+                    <input
+                        type="password"
+                        className="form-control"
+                        placeholder="Crea una contraseña"
+                    />
                 </div>
-                <Link to={"/login"} className="btn btn-success">Register</Link>
-            </div>
-            <div className="card-footer text-body-secondary">
-                <Link to={"/login"}>Did you register???</Link>
-            </div>
+
+
+                <button type="submit" className="btn btn-primary w-100">
+                    Registrarse
+                </button>
+
+                <div className="text-center mt-4">
+                    <span className="text-muted">¿Ya estás registrado? </span>
+                    <Link to="/login" className="text-decoration-none fw-semibold">
+                        Inicia sesión aquí
+                    </Link>
+                </div>
+            </form>
         </div>
     </div>
     )
