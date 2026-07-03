@@ -1,6 +1,8 @@
 import { Link } from "react-router-dom";
+import UseGlobalReducer from "../hooks/useGlobalReducer";
 
 const MiniUser = () => {
+    const {store} = UseGlobalReducer();
 
     return (
         <div className="container">
@@ -22,12 +24,14 @@ const MiniUser = () => {
                                             </div>
                                         </li>
                                         <li>
-                                            <div className="dropdown-item" >
+                                            <div className="dropdown-item d-flex align-items-center" >
                                                 <Link to="/shopping-cart">
                                                     Shopping Cart
                                                 </Link>
                                                 <div>
-                                                    0
+                                                    {store.cartItems.length > 0 && (
+                                                        <span className="badge bg-primary ms-2">{store.cartItems.length}</span>
+                                                    )}
                                                 </div>
                                             </div>
                                         </li>
