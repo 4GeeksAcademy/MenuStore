@@ -1,6 +1,13 @@
-
+import React, { useState } from 'react';
 
 const UserView = () => {
+
+    const [selectedFile, setSelectedFile] = useState(null);
+
+    const handleFileChange = (e) => {
+        setSelectedFile(e.target.files[0]);
+    };
+
     return (
         <div className="container">
             <div className="card text-center shadow-sm">
@@ -11,11 +18,27 @@ const UserView = () => {
                 <div className="card-body">
                     <div className="row border-bottom py-4 mb-4 justify-content-between align-items-center">
                         <div className="col-auto">
-                            <img
-                                src="https://unsplash.com"
-                                className="img-fluid rounded-circle border shadow-sm"
-                                alt="User avatar"
-                            />
+                            <div className="input-group">
+                                {!selectedFile && <>
+                                    <input type="file" multiple={false}
+                                        accept="image/*" className="form-control" id="inputGroupFile02"
+                                        onChange={handleFileChange}
+                                    />
+                                </>}
+
+                                {selectedFile && (
+                                    <div className="d-flex align-items-center">
+                                        <img src={URL.createObjectURL(selectedFile)} alt="Selected"
+                                            className="img-thumbnail object-fit-cover me-2"
+                                            style={{ width: '100px', height: '100px' }}
+                                        />
+                                        <span>{selectedFile.name}</span>
+                                        <button className="btn btn-danger ms-3" onClick={() => setSelectedFile(null)}>
+                                            Remove
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                         <div className="col-auto">
                             <button type="button" className="btn btn-secondary">Edit Avatar</button>
