@@ -34,7 +34,10 @@ class Cart(db.Model):
 
     user_id: Mapped[int] = mapped_column(ForeignKey("user.id"), nullable=False)
 
-    user: Mapped["User"] = relationship(back_populates="cart", cascade="all, delete")
+    user: Mapped["User"] = relationship(back_populates="cart")
+
+    cart_products: Mapped[list["Cart_Products"]] = relationship(back_populates="cart", cascade="all, delete-orphan")
+
 
 
 class Cart_Products(db.Model):
@@ -43,8 +46,7 @@ class Cart_Products(db.Model):
 
     quantity: Mapped[int] = mapped_column(nullable=False)
     cart_id: Mapped[int] = mapped_column(ForeignKey("cart.id"), nullable=False)
-    product_id: Mapped[int] = mapped_column(
-        ForeignKey("product.id"), nullable=False)
+    product_id: Mapped[int] = mapped_column(ForeignKey("product.id"), nullable=False)
 
     cart: Mapped["Cart"] = relationship(back_populates="cart_products")
     product: Mapped["Product"] = relationship(back_populates="cart_products")
