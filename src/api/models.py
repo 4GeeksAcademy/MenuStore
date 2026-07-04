@@ -11,6 +11,10 @@ class User(db.Model):
     is_active: Mapped[bool] = mapped_column(Boolean(), nullable=False)
 
 
+
+
+
+
     def serialize(self):
         return {
             "id": self.id,

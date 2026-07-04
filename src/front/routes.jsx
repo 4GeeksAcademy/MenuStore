@@ -1,5 +1,4 @@
 // Import necessary components and functions from react-router-dom.
-
 import {
   createBrowserRouter,
   createRoutesFromElements,
@@ -9,9 +8,9 @@ import { Layout } from "./pages/Layout";
 import { Login } from "./pages/Login";
 import Register from "./pages/Register";
 import ShopAdminView from "./pages/ShopAdminView";
-import { CustomerHome } from "./pages/CustomerHome"; // revisar
-import UserView from "./pages/UserView"; // revisar
-import { ProductManager } from "./pages/ProductManager"; // acutalizar yisselle
+import { CustomerHome } from "./pages/CustomerHome";
+import UserView from "./pages/UserView"; 
+import { ProductManager } from "./pages/ProductManager"; 
 import ShoppingCart from "./pages/ShoppingCart";
 
 export const router = createBrowserRouter(
