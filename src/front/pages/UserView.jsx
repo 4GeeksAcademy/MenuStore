@@ -3,6 +3,12 @@ import React, { useState } from 'react';
 const UserView = () => {
 
     const [selectedFile, setSelectedFile] = useState(null);
+    const [selectedRole, setSelectedRole] = useState("User");
+    const [inputValues, setInputValues] = useState({
+        username: "",
+        email: "",
+
+    });
 
     const handleFileChange = (e) => {
         setSelectedFile(e.target.files[0]);
@@ -20,10 +26,17 @@ const UserView = () => {
                         <div className="col-auto">
                             <div className="input-group">
                                 {!selectedFile && <>
-                                    <input type="file" multiple={false}
-                                        accept="image/*" className="form-control" id="inputGroupFile02"
+                                    <input
+                                        type="file"
+                                        multiple={false}
+                                        accept="image/*"
+                                        className="d-none"
+                                        id="inputGroupFile02"
                                         onChange={handleFileChange}
                                     />
+                                    <label htmlFor="inputGroupFile02" className="btn btn-outline-primary border-3">
+                                        Subir una imagen
+                                    </label>
                                 </>}
 
                                 {selectedFile && (
@@ -65,16 +78,34 @@ const UserView = () => {
 
                     <div className="row border-bottom py-4 mb-4 justify-content-between align-items-center">
                         <div className="col-auto">
-                            <div className="btn-group">
-                                <button type="button" className="btn btn-primary p-0">
-                                    <input type="text" className="form-control form-control-sm border-0 bg-transparent text-white" placeholder="Role" defaultValue="Admin" />
-                                </button>
-                                <button type="button" className="btn btn-primary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
-                                    <span className="visually-hidden">Toggle Dropdown</span>
+                            <div className="dropdown">
+                                <button
+                                    className="btn btn-primary dropdown-toggle"
+                                    type="button"
+                                    data-bs-toggle="dropdown"
+                                    aria-expanded="false"
+                                >
+                                    {selectedRole}
                                 </button>
                                 <ul className="dropdown-menu">
-                                    <li><div className="dropdown-item">Admin</div></li>
-                                    <li><div className="dropdown-item">User</div></li>
+                                    <li>
+                                        <button
+                                            className="dropdown-item"
+                                            type="button"
+                                            onClick={() => setSelectedRole('User')}
+                                        >
+                                            User
+                                        </button>
+                                    </li>
+                                    <li>
+                                        <button
+                                            className="dropdown-item"
+                                            type="button"
+                                            onClick={() => setSelectedRole('Admin')}
+                                        >
+                                            Admin
+                                        </button>
+                                    </li>
                                 </ul>
                             </div>
                         </div>
