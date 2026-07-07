@@ -19,10 +19,6 @@ class User(db.Model):
 
     cart: Mapped["Cart"] = relationship(back_populates="user", uselist=False)
 
-
-
-
-
     def serialize(self):
         return {
             "id": self.id,
@@ -43,7 +39,7 @@ class Cart(db.Model):
 
     cart_products: Mapped[list["Cart_Products"]] = relationship(back_populates="cart", cascade="all, delete-orphan")
 
-def serialize(self):
+    def serialize(self):
         return {
             "id": self.id,
             "user_id": self.user_id,
