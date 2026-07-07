@@ -1,9 +1,5 @@
-<<<<<<< HEAD
-// Import necessary components and functions from react-router-dom.
-=======
 
 
->>>>>>> e856eb172bf3ddd5b078f549cd234cdf97228d85
 import {
   createBrowserRouter,
   createRoutesFromElements,
