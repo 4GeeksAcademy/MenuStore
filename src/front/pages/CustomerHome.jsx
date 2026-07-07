@@ -13,44 +13,63 @@ export const CustomerHome = () => {
   const [ratings, setRatings] = useState({});
 
   useEffect(() => {
-    const savedShopName = localStorage.getItem("shopName");
-    const savedCategories = localStorage.getItem("categories");
-
-    if (savedShopName) {
-      setShopName(savedShopName);
-    }
-
-    if (savedCategories) {
-      const parsedCategories = JSON.parse(savedCategories);
-
-      if (parsedCategories.length > 0) {
-        setCategories(parsedCategories);
-        setSelectedCategory(parsedCategories[0]);
-      }
-    }
+    getStore();
+    getCategories();
   }, []);
 
-  useEffect(() => {
-    const savedProducts = localStorage.getItem(selectedCategory);
+  const getStore = async () => {
+    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/store`);
+    const data = await response.json();
 
-    if (savedProducts) {
-      setProducts(JSON.parse(savedProducts));
+    if (response.ok) {
+      setShopName(data.name || "Shop Name");
+    }
+  };
+
+  const getCategories = async () => {
+    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/categories`);
+    const data = await response.json();
+
+    if (response.ok) {
+      setCategories(data);
+
+      if (data.length > 0) {
+        setSelectedCategory(data[0]);
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (selectedCategory) {
+      getProductsByCategory();
     } else {
       setProducts([]);
     }
   }, [selectedCategory]);
+
+  const getProductsByCategory = async () => {
+    const response = await fetch(
+      `${import.meta.env.VITE_BACKEND_URL}/api/products/category/${selectedCategory.id}`
+    );
+
+    const data = await response.json();
+
+    if (response.ok) {
+      setProducts(data);
+    }
+  };
 
   const addToCart = (product) => {
     setCart([...cart, product]);
     alert(`${product.name} agregado al carrito`);
   };
 
-  const rateProduct = (productId, raiting) => {
-    setRatings({
-      ...ratings,
-      [productId]: raiting
-    });
-  };
+  const rateProduct = (productId, rating) => {
+  setRatings({
+    ...ratings,
+    [productId]: rating
+  });
+};
 
 
 
@@ -81,22 +100,22 @@ export const CustomerHome = () => {
         <div className="bg-dark py-3 px-4 d-flex justify-content-center flex-wrap gap-2">
           {categories.map((category) => (
             <button
-              key={category}
+              key={category.id}
               className={
-                selectedCategory === category
+                selectedCategory?.id === category.id
                   ? "btn btn-light border border-dark text-capitalize"
                   : "btn btn-light text-capitalize"
               }
               onClick={() => setSelectedCategory(category)}
             >
-              {category}
+              {category.name}
             </button>
           ))}
         </div>
 
         <div className="p-4">
           <h4 className="text-capitalize mb-4">
-            {selectedCategory}
+            {selectedCategory ? selectedCategory.name : "Categorías"}
           </h4>
 
           {products.length === 0 ? (
@@ -128,7 +147,7 @@ export const CustomerHome = () => {
                   <h5 className="fw-bold mb-2">{product.name}</h5>
 
                   <p className="text-muted mb-2">
-                    {product.details}
+                    {product.description}
                   </p>
 
                   <span className="fs-5 fw-bold text-success">

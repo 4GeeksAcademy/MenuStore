@@ -226,3 +226,12 @@ def delete_product(product_id):
     db.session.commit()
 
     return jsonify({"message": "Producto eliminado correctamente"}), 200
+
+@api.route("/products/<int:product_id>", methods=["GET"])
+def get_product(product_id):
+    product = Product.query.get(product_id)
+
+    if product is None:
+        return jsonify({"error": "Producto no encontrado"}), 404
+
+    return jsonify(product.serialize()), 200
