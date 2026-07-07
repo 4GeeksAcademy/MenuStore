@@ -11,16 +11,58 @@ api = Blueprint('api', __name__)
 # Allow CORS requests to this API
 CORS(api)
 
+@api.route("/admin/users", methods=["GET"])
+def get_users():
+    users = User.query.all()
+    return jsonify([user.serialize() for user in users]), 200
 
-@api.route('/hello', methods=['POST', 'GET'])
-def handle_hello():
 
-    response_body = {
-        "message": "Hello! I'm a message that came from the backend, check the network tab on the google inspector and you will see the GET request"
-    }
+@api.route("/user", methods=["POST"])
+def create_user():
+    data = request.get_json()
 
-    return jsonify(response_body), 200
+    if not data:
+        return jsonify({"error": "No enviaste datos"}), 400
 
+    username = data.get("username")
+    email = data.get("email")
+    password = data.get("password")
+
+    if not username:
+        return jsonify({"error": "El nombre de usuario es obligatorio"}), 400
+
+    if not email:
+        return jsonify({"error": "El correo electrónico es obligatorio"}), 400
+
+    if not password:
+        return jsonify({"error": "La contraseña es obligatoria"}), 400
+
+    existing_user = User.query.filter_by(email=email).first()
+
+    if existing_user:
+        return jsonify({"error": "Ya existe un usuario con ese correo electrónico"}), 400
+
+    new_user = User(username=username, email=email, password=password)
+
+    try:
+        db.session.add(new_user)
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": "Error al crear el usuario"}), 500
+
+    return jsonify(new_user.serialize()), 201
+    
+
+
+@api.route("/user/<int:user_id>", methods=["GET"])
+def get_user(user_id):
+    user = User.query.get(user_id)
+
+    if user is None:
+        return jsonify({"error": "Usuario no encontrado"}), 404
+
+    return jsonify(user.serialize()), 200
 
 @api.route("/store", methods=["GET"])
 def get_store():
@@ -60,8 +102,12 @@ def create_store():
         description=description
     )
 
-    db.session.add(new_store)
-    db.session.commit()
+    try:
+        db.session.add(new_store)
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": "Error al crear la tienda"}), 500
 
     return jsonify(new_store.serialize()), 201
 
@@ -87,7 +133,13 @@ def update_store():
     if "description" in data:
         store.description = data["description"]
 
-    db.session.commit()
+    
+
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": "Error al actualizar la tienda"}), 500
 
     return jsonify(store.serialize()), 200
 
@@ -111,8 +163,12 @@ def create_category():
 
     new_category = Category(name=name)
 
-    db.session.add(new_category)
-    db.session.commit()
+    try:
+        db.session.add(new_category)
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": "Error al crear la categoría"}), 500
 
     return jsonify(new_category.serialize()), 201
 
@@ -123,9 +179,13 @@ def delete_category(category_id):
     if category is None:
         return jsonify({"error": "Categoría no encontrada"}), 404
 
-    db.session.delete(category)
-    db.session.commit()
-
+    try:
+        db.session.delete(category)
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": "Error al eliminar la categoría"}), 500
+    
     return jsonify({"message": "Categoría eliminada correctamente"}), 200
 
 @api.route("/products/category/<int:category_id>", methods=["GET"])
@@ -174,8 +234,13 @@ def create_product():
         category_id=category_id
     )
 
-    db.session.add(new_product)
-    db.session.commit()
+    try:
+        db.session.add(new_product)
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": "Error al crear Producto"}), 500
+    
 
     return jsonify(new_product.serialize()), 201
 
@@ -210,8 +275,13 @@ def update_product(product_id):
             return jsonify({"error": "Categoría no encontrada"}), 404
 
         product.category_id = data["category_id"]
+    
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": "Error al actualizar el producto"}), 500
 
-    db.session.commit()
 
     return jsonify(product.serialize()), 200
 
@@ -222,7 +292,11 @@ def delete_product(product_id):
     if product is None:
         return jsonify({"error": "Producto no encontrado"}), 404
 
-    db.session.delete(product)
-    db.session.commit()
+    try:
+        db.session.delete(product)
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": "Error al eliminar el producto"}), 500
 
     return jsonify({"message": "Producto eliminado correctamente"}), 200
