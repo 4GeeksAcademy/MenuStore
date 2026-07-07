@@ -14,7 +14,7 @@ class User(db.Model):
     email: Mapped[str] = mapped_column(
         String(120), unique=True, nullable=False)
     password: Mapped[str] = mapped_column(nullable=False)
-    role: Mapped[str] = mapped_column(String(20), nullable=False)
+    role: Mapped[str] = mapped_column(String(20), nullable=False, default="user")
     is_active: Mapped[bool] = mapped_column(Boolean(), nullable=False)
 
     cart: Mapped["Cart"] = relationship(back_populates="user", uselist=False)
@@ -32,16 +32,12 @@ class User(db.Model):
 
 class Cart(db.Model):
     __tablename__ = 'cart'
-
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("user.id"), nullable=False)
 
     user: Mapped["User"] = relationship(back_populates="cart")
 
-    cart_products: Mapped[list["Cart_Products"]] = relationship(
-        back_populates="cart",
-        cascade="all, delete-orphan"
-    )
+    cart_products: Mapped[list["Cart_Products"]] = relationship(back_populates="cart", cascade="all, delete-orphan")
 
     def serialize(self):
         return {
@@ -57,8 +53,7 @@ class Cart_Products(db.Model):
 
     quantity: Mapped[int] = mapped_column(nullable=False)
     cart_id: Mapped[int] = mapped_column(ForeignKey("cart.id"), nullable=False)
-    product_id: Mapped[int] = mapped_column(
-        ForeignKey("product.id"), nullable=False)
+    product_id: Mapped[int] = mapped_column(ForeignKey("product.id"), nullable=False)
 
     cart: Mapped["Cart"] = relationship(back_populates="cart_products")
     product: Mapped["Product"] = relationship(back_populates="cart_products")
@@ -71,7 +66,6 @@ class Cart_Products(db.Model):
             "product_id": self.product_id,
             "product": self.product.serialize() if self.product else None
         }
-
 
 class Store(db.Model):
     __tablename__ = "store"
@@ -137,4 +131,4 @@ class Product(db.Model):
             "description": self.description,
             "image": self.image,
             "category_id": self.category_id
-        }
+        }   
