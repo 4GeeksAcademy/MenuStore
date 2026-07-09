@@ -2,7 +2,7 @@
 This module takes care of starting the API Server, Loading the DB and Adding the endpoints
 """
 from flask import Flask, request, jsonify, url_for, Blueprint
-from api.models import db, User, Store, Category, Product, Cart, Cart_Products
+from api.models import db, User, Store, Category, Product, Cart, Cart_List
 from api.utils import generate_sitemap, APIException
 from flask_cors import CORS
 
@@ -128,7 +128,7 @@ def get_user_cart(user_id):
         return jsonify({
             "id": None,
             "user_id": user.id,
-            "cart_products": []
+            "cart_list": []
         }), 200
 
     return jsonify(cart.serialize()), 200
@@ -153,17 +153,17 @@ def add_product_to_cart():
     if not cart:
         cart = Cart(user_id=user_id)
         db.session.add(cart)
-        db.session.flush()  
+        db.session.flush()
 
-    cart_product = Cart_Products.query.filter_by(
+    cart_list = Cart_List.query.filter_by(
         cart_id=cart.id, product_id=product_id).first()
 
-    if cart_product:
-        cart_product.quantity += 1
+    if cart_list:
+        cart_list.quantity += 1
     else:
-        cart_product = Cart_Products(
+        cart_list = Cart_List(
             cart_id=cart.id, product_id=product_id, quantity=1)
-        db.session.add(cart_product)
+        db.session.add(cart_list)
 
     try:
         db.session.commit()
@@ -171,6 +171,9 @@ def add_product_to_cart():
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": "Error al agregar el producto al carrito"}), 500
+
+
+
 
 
 @api.route("/store", methods=["GET"])

@@ -9,13 +9,15 @@ class User(db.Model):
     __tablename__ = 'user'
     id: Mapped[int] = mapped_column(primary_key=True)
 
-    image: Mapped[str] = mapped_column(String(120), nullable=True)
+    image: Mapped[str | None] = mapped_column(String(120), nullable=True)
     name: Mapped[str] = mapped_column(String(120), nullable=False)
     email: Mapped[str] = mapped_column(
         String(120), unique=True, nullable=False)
-    password: Mapped[str] = mapped_column(nullable=False)
-    role: Mapped[str] = mapped_column(String(20), nullable=False, default="user")
-    is_active: Mapped[bool] = mapped_column(Boolean(), nullable=False)
+    password: Mapped[str] = mapped_column(String(120), nullable=False)
+    role: Mapped[str] = mapped_column(
+        String(20), nullable=False, default="user")
+    is_active: Mapped[bool] = mapped_column(
+        Boolean(), nullable=False, default=True)
 
     cart: Mapped["Cart"] = relationship(back_populates="user", uselist=False)
 
@@ -26,7 +28,8 @@ class User(db.Model):
             "name": self.name,
             "email": self.email,
             "role": self.role,
-            "is_active": self.is_active
+            "is_active": self.is_active,
+            "cart": self.cart.serialize() if self.cart else None
         }
 
 
@@ -37,26 +40,28 @@ class Cart(db.Model):
 
     user: Mapped["User"] = relationship(back_populates="cart")
 
-    cart_products: Mapped[list["Cart_Products"]] = relationship(back_populates="cart", cascade="all, delete-orphan")
+    cart_list: Mapped[list["Cart_List"]] = relationship(
+        back_populates="cart", cascade="all, delete-orphan")
 
     def serialize(self):
         return {
             "id": self.id,
             "user_id": self.user_id,
-            "cart_products": [item.serialize() for item in self.cart_products]
+            "cart_list": [item.serialize() for item in self.cart_list]
         }
 
 
-class Cart_Products(db.Model):
-    __tablename__ = 'cart_products'
+class Cart_List(db.Model):
+    __tablename__ = 'cart_list'
     id: Mapped[int] = mapped_column(primary_key=True)
 
     quantity: Mapped[int] = mapped_column(nullable=False)
     cart_id: Mapped[int] = mapped_column(ForeignKey("cart.id"), nullable=False)
-    product_id: Mapped[int] = mapped_column(ForeignKey("product.id"), nullable=False)
+    product_id: Mapped[int] = mapped_column(
+        ForeignKey("product.id"), nullable=False)
 
-    cart: Mapped["Cart"] = relationship(back_populates="cart_products")
-    product: Mapped["Product"] = relationship(back_populates="cart_products")
+    cart: Mapped["Cart"] = relationship(back_populates="cart_list")
+    product: Mapped["Product"] = relationship(back_populates="cart_list")
 
     def serialize(self):
         return {
@@ -66,6 +71,7 @@ class Cart_Products(db.Model):
             "product_id": self.product_id,
             "product": self.product.serialize() if self.product else None
         }
+
 
 class Store(db.Model):
     __tablename__ = "store"
@@ -98,8 +104,7 @@ class Category(db.Model):
     def serialize(self):
         return {
             "id": self.id,
-            "name": self.name,
-            "products": [product.serialize() for product in self.products]
+            "name": self.name
         }
 
 
@@ -119,8 +124,8 @@ class Product(db.Model):
 
     category: Mapped["Category"] = relationship(back_populates="products")
 
-    cart_products: Mapped[list["Cart_Products"]] = relationship(
-        back_populates="product"
+    cart_list: Mapped[list["Cart_List"]] = relationship(
+        back_populates="product", cascade="all, delete-orphan"
     )
 
     def serialize(self):
@@ -131,4 +136,4 @@ class Product(db.Model):
             "description": self.description,
             "image": self.image,
             "category_id": self.category_id
-        }   
+        }
