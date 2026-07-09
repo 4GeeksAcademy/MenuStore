@@ -2,7 +2,7 @@
 This module takes care of starting the API Server, Loading the DB and Adding the endpoints
 """
 from flask import Flask, request, jsonify, url_for, Blueprint
-from api.models import db, User, Store, Category, Product, Cart, Cart_List
+from api.models import db, User, Store, Category, Product, Cart, Cart_Items
 from api.utils import generate_sitemap, APIException
 from flask_cors import CORS
 
@@ -128,7 +128,7 @@ def get_user_cart(user_id):
         return jsonify({
             "id": None,
             "user_id": user.id,
-            "cart_list": []
+            "cart_items": []
         }), 200
 
     return jsonify(cart.serialize()), 200
@@ -144,7 +144,6 @@ def add_product_to_cart():
     user_id = data.get("user_id")
     product_id = data.get("product_id")
 
-
     if not user_id or not product_id:
         return jsonify({"error": "Falta user_id o product_id"}), 400
 
@@ -155,15 +154,15 @@ def add_product_to_cart():
         db.session.add(cart)
         db.session.flush()
 
-    cart_list = Cart_List.query.filter_by(
+    cart_items = Cart_Items.query.filter_by(
         cart_id=cart.id, product_id=product_id).first()
 
-    if cart_list:
-        cart_list.quantity += 1
+    if cart_items:
+        cart_items.quantity += 1
     else:
-        cart_list = Cart_List(
+        cart_items = Cart_Items(
             cart_id=cart.id, product_id=product_id, quantity=1)
-        db.session.add(cart_list)
+        db.session.add(cart_items)
 
     try:
         db.session.commit()
@@ -171,9 +170,6 @@ def add_product_to_cart():
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": "Error al agregar el producto al carrito"}), 500
-
-
-
 
 
 @api.route("/store", methods=["GET"])

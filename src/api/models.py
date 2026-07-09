@@ -1,6 +1,7 @@
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import String, Boolean, ForeignKey
+from sqlalchemy import String, Boolean, ForeignKey, DateTime, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from datetime import datetime
 
 db = SQLAlchemy()
 
@@ -30,46 +31,6 @@ class User(db.Model):
             "role": self.role,
             "is_active": self.is_active,
             "cart": self.cart.serialize() if self.cart else None
-        }
-
-
-class Cart(db.Model):
-    __tablename__ = 'cart'
-    id: Mapped[int] = mapped_column(primary_key=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("user.id"), nullable=False)
-
-    user: Mapped["User"] = relationship(back_populates="cart")
-
-    cart_list: Mapped[list["Cart_List"]] = relationship(
-        back_populates="cart", cascade="all, delete-orphan")
-
-    def serialize(self):
-        return {
-            "id": self.id,
-            "user_id": self.user_id,
-            "cart_list": [item.serialize() for item in self.cart_list]
-        }
-
-
-class Cart_List(db.Model):
-    __tablename__ = 'cart_list'
-    id: Mapped[int] = mapped_column(primary_key=True)
-
-    quantity: Mapped[int] = mapped_column(nullable=False)
-    cart_id: Mapped[int] = mapped_column(ForeignKey("cart.id"), nullable=False)
-    product_id: Mapped[int] = mapped_column(
-        ForeignKey("product.id"), nullable=False)
-
-    cart: Mapped["Cart"] = relationship(back_populates="cart_list")
-    product: Mapped["Product"] = relationship(back_populates="cart_list")
-
-    def serialize(self):
-        return {
-            "id": self.id,
-            "quantity": self.quantity,
-            "cart_id": self.cart_id,
-            "product_id": self.product_id,
-            "product": self.product.serialize() if self.product else None
         }
 
 
@@ -124,7 +85,7 @@ class Product(db.Model):
 
     category: Mapped["Category"] = relationship(back_populates="products")
 
-    cart_list: Mapped[list["Cart_List"]] = relationship(
+    cart_items: Mapped[list["Cart_Items"]] = relationship(
         back_populates="product", cascade="all, delete-orphan"
     )
 
@@ -136,4 +97,99 @@ class Product(db.Model):
             "description": self.description,
             "image": self.image,
             "category_id": self.category_id
+        }
+
+
+class Cart(db.Model):
+    __tablename__ = 'cart'
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("user.id"), nullable=False)
+
+    user: Mapped["User"] = relationship(back_populates="cart")
+
+    cart_items: Mapped[list["Cart_Items"]] = relationship(
+        back_populates="cart", cascade="all, delete-orphan")
+
+    def serialize(self):
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "cart_items": [item.serialize() for item in self.cart_items]
+        }
+
+
+class Cart_Items(db.Model):
+    __tablename__ = 'cart_items'
+    id: Mapped[int] = mapped_column(primary_key=True)
+
+    quantity: Mapped[int] = mapped_column(nullable=False)
+    cart_id: Mapped[int] = mapped_column(ForeignKey("cart.id"), nullable=False)
+    product_id: Mapped[int] = mapped_column(
+        ForeignKey("product.id"), nullable=False)
+
+    cart: Mapped["Cart"] = relationship(back_populates="cart_items")
+    product: Mapped["Product"] = relationship(back_populates="cart_items")
+
+    def serialize(self):
+        return {
+            "id": self.id,
+            "quantity": self.quantity,
+            "cart_id": self.cart_id,
+            "product_id": self.product_id,
+            "product": self.product.serialize() if self.product else None
+        }
+
+
+class Order(db.Model):
+    __tablename__ = 'order'
+    id: Mapped[int] = mapped_column(primary_key=True)
+
+    user_id: Mapped[int] = mapped_column(ForeignKey("user.id"), nullable=False)
+    total_amount: Mapped[float] = mapped_column(nullable=False)
+    status: Mapped[str] = mapped_column(
+        String(20), nullable=False, default="pending")
+    date: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now())
+
+    user: Mapped["User"] = relationship()
+
+    order_items: Mapped[list["Order_Items"]] = relationship(
+        back_populates="order", cascade="all, delete-orphan")
+
+    def serialize(self):
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "total_amount": self.total_amount,
+            "status": self.status,
+            "date": self.date.strftime("%Y-%m-%d %H:%M:%S")if self.date else None,
+            "order_items": [item.serialize() for item in self.order_items]
+        }
+
+
+class Order_Items(db.Model):
+    __tablename__ = 'order_items'
+    id: Mapped[int] = mapped_column(primary_key=True)
+
+    quantity: Mapped[int] = mapped_column(nullable=False)
+    historic_price: Mapped[float] = mapped_column(nullable=False)
+
+    order_id: Mapped[int] = mapped_column(
+        ForeignKey("order.id"), nullable=False)
+    product_id: Mapped[int] = mapped_column(
+        ForeignKey("product.id"), nullable=False)
+
+    order: Mapped["Order"] = relationship(back_populates="order_items")
+    product: Mapped["Product"] = relationship()
+
+    def serialize(self):
+        return {
+            "id": self.id,
+            "order_id": self.order_id,
+            "quantity": self.quantity,
+            "historic_price": self.historic_price,
+            "subtotal": self.quantity * self.historic_price,
+            "product_id": self.product_id,
+            "product_name": self.product.name if self.product else "Producto ya no disponible",
+            "product_image": self.product.image if self.product else None
         }
