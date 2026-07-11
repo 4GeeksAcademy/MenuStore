@@ -20,6 +20,7 @@ export const router = createBrowserRouter(
       <Route path="login" element={<Login />} />
       <Route path="register" element={<Register />} />
 
+      
       <Route path="admin-shop" element={<ShopAdminView />} />
       <Route path="/product-manager/:categoryId" element={<ProductManager />} />
 

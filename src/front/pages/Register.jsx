@@ -5,41 +5,43 @@ import { fetchRegister } from "../fetch";
 
 const Register = () => {
     const navigate = useNavigate();
-    const [selectedRole, setSelectedRole] = useState("");
-    const [inputValues, setInputValues] = useState({
+    
+    const [inputData, setInputData] = useState({
         username: "",
         email: "",
-        password: "",
+        password: ""
     });
 
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
-        setInputValues((prevValues) => ({
-            ...prevValues,
+        setInputData((prevData) => ({
+            ...prevData,
             [name]: value,
         }));
     };
 
-    const handleRegister = (e) => {
+    const handleRegister = async (e) => {
         e.preventDefault();
 
-        if (selectedRole === "") {
-            alert("Selecciona si eres cliente o administrador");
-            return;
-        }
         if (
-            inputValues.username === "" ||
-            inputValues.email === "" ||
-            inputValues.password === ""
+            inputData.username === "" ||
+            inputData.email === "" ||
+            inputData.password === ""
         ) {
             alert("Por favor completa todos los campos");
             return;
         }
 
-        fetchRegister(inputValues);
+        try{
 
-        navigate("/login");
+            await fetchRegister(inputData);
+            alert("Usuario registrado correctamente");
+            navigate("/login");
+
+        } catch (error) {
+            console.error('Error al registrar usuario:', error);
+        }
     };
 
     return (
@@ -48,31 +50,13 @@ const Register = () => {
                 <h3 className="text-center mb-4">Registro de Usuario</h3>
 
                 <form onSubmit={handleRegister}>
-                    <p className="fw-semibold mb-2">¿Cómo deseas registrarte?</p>
-                    <div className="d-flex gap-2 mb-4">
-                        <button
-                            type="button"
-                            className={`btn w-50 ${selectedRole === "client" ? "btn-primary" : "btn-outline-primary"}`}
-                            onClick={() => setSelectedRole("client")}
-                        >
-                            Cliente
-                        </button>
-
-                        <button
-                            type="button"
-                            className={`btn w-50 ${selectedRole === "admin" ? "btn-dark" : "btn-outline-dark"}`}
-                            onClick={() => setSelectedRole("admin")}
-                        >
-                            Administrador
-                        </button>
-                    </div>
                     <div className="mb-3">
                         <label className="form-label">Nombre de Usuario</label>
                         <input
                             type="text"
                             className="form-control"
                             placeholder="Ingresa tu usuario"
-                            value={inputValues.username}
+                            value={inputData.username}
                             onChange={handleInputChange}
                             name="username"
                         />
@@ -84,7 +68,7 @@ const Register = () => {
                             type="email"
                             className="form-control"
                             placeholder="Ingresa tu correo"
-                            value={inputValues.email}
+                            value={inputData.email}
                             onChange={handleInputChange}
                             name="email"
                         />
@@ -96,7 +80,7 @@ const Register = () => {
                             type="password"
                             className="form-control"
                             placeholder="Crea una contraseña"
-                            value={inputValues.password}
+                            value={inputData.password}
                             onChange={handleInputChange}
                             name="password"
                         />
