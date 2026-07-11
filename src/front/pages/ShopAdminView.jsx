@@ -48,7 +48,7 @@ const ShopAdminView = () => {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        name: shopName
+        "name": shopName
       })
     });
 
@@ -73,7 +73,7 @@ const ShopAdminView = () => {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        name: categoryName.trim().toLowerCase()
+        "name": categoryName.toLowerCase()
       })
     });
 
