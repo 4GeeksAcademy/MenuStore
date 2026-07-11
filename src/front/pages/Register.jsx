@@ -1,5 +1,7 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
+import { fetchRegister } from "../fetch";
+
 
 const Register = () => {
     const navigate = useNavigate();
@@ -9,6 +11,7 @@ const Register = () => {
         email: "",
         password: "",
     });
+
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -33,6 +36,8 @@ const Register = () => {
             alert("Por favor completa todos los campos");
             return;
         }
+
+        fetchRegister(inputValues);
 
         navigate("/login");
     };
