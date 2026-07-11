@@ -5,7 +5,6 @@ export const ProductManager = () => {
   const { categoryId } = useParams();
 
   const [products, setProducts] = useState([]);
-  const [categoryName, setCategoryName] = useState("Categoría");
 
   const [productName, setProductName] = useState("");
   const [productImage, setProductImage] = useState("");
@@ -13,39 +12,34 @@ export const ProductManager = () => {
   const [productDetails, setProductDetails] = useState("");
 
   const [editingId, setEditingId] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     getProducts();
-    getCategoryName();
   }, [categoryId]);
 
   const getProducts = async () => {
-    const response = await fetch(
-      `${import.meta.env.VITE_BACKEND_URL}/api/products/category/${categoryId}`
-    );
+    try {
+      setLoading(true);
 
-    const data = await response.json();
-
-    if (response.ok) {
-      setProducts(data);
-    }
-  };
-
-  const getCategoryName = async () => {
-    const response = await fetch(
-      `${import.meta.env.VITE_BACKEND_URL}/api/categories`
-    );
-
-    const data = await response.json();
-
-    if (response.ok) {
-      const currentCategory = data.find(
-        (category) => category.id === Number(categoryId)
+      const response = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/products/category/${categoryId}`
       );
 
-      if (currentCategory) {
-        setCategoryName(currentCategory.name);
+      const data = await response.json();
+
+      if (!response.ok) {
+        alert(data.error || "No se pudieron cargar los productos");
+        setProducts([]);
+        return;
       }
+
+      setProducts(data);
+    } catch (error) {
+      console.error("Error al cargar productos:", error);
+      alert("No se pudo conectar con el backend");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -63,84 +57,108 @@ export const ProductManager = () => {
       return;
     }
 
+    if (productPrice === "" || Number(productPrice) < 0) {
+      alert("Ingresa un precio válido");
+      return;
+    }
+
     const productData = {
-      name: productName,
-      image: productImage,
+      name: productName.trim(),
+      image: productImage.trim(),
       price: Number(productPrice),
-      description: productDetails,
+      description: productDetails.trim(),
       category_id: Number(categoryId)
     };
 
-    if (editingId) {
-      const response = await fetch(
-        `${import.meta.env.VITE_BACKEND_URL}/api/products/${editingId}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify(productData)
-        }
-      );
+    try {
+      const url = editingId
+        ? `${import.meta.env.VITE_BACKEND_URL}/api/products/${editingId}`
+        : `${import.meta.env.VITE_BACKEND_URL}/api/products`;
 
-      const updatedProduct = await response.json();
+      const method = editingId ? "PUT" : "POST";
 
-      if (response.ok) {
+      const response = await fetch(url, {
+        method,
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(productData)
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        alert(data.error || "No se pudo guardar el producto");
+        return;
+      }
+
+      if (editingId) {
         setProducts(
           products.map((product) =>
-            product.id === editingId ? updatedProduct : product
+            product.id === editingId ? data : product
           )
         );
 
-        clearForm();
-        alert("Producto actualizado");
+        alert("Producto actualizado correctamente");
+      } else {
+        setProducts([...products, data]);
+        alert("Producto guardado correctamente");
       }
-    } else {
-      const response = await fetch(
-        `${import.meta.env.VITE_BACKEND_URL}/api/products`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify(productData)
-        }
-      );
 
-      const newProduct = await response.json();
-
-      if (response.ok) {
-        setProducts([...products, newProduct]);
-        clearForm();
-        alert("Producto guardado");
-      }
+      clearForm();
+    } catch (error) {
+      console.error("Error al guardar producto:", error);
+      alert("No se pudo conectar con el backend");
     }
   };
 
   const editProduct = (product) => {
     setEditingId(product.id);
-    setProductName(product.name);
+    setProductName(product.name || "");
     setProductImage(product.image || "");
-    setProductPrice(product.price);
+    setProductPrice(String(product.price ?? ""));
     setProductDetails(product.description || "");
+
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth"
+    });
   };
 
   const deleteProduct = async (productId) => {
-    const response = await fetch(
-      `${import.meta.env.VITE_BACKEND_URL}/api/products/${productId}`,
-      {
-        method: "DELETE"
-      }
+    const confirmed = window.confirm(
+      "¿Seguro que deseas eliminar este producto?"
     );
 
-    if (response.ok) {
-      setProducts(products.filter((product) => product.id !== productId));
+    if (!confirmed) return;
+
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/products/${productId}`,
+        {
+          method: "DELETE"
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        alert(data.error || "No se pudo eliminar el producto");
+        return;
+      }
+
+      setProducts(
+        products.filter((product) => product.id !== productId)
+      );
 
       if (editingId === productId) {
         clearForm();
       }
 
-      alert("Producto eliminado");
+      alert(data.message || "Producto eliminado correctamente");
+    } catch (error) {
+      console.error("Error al eliminar producto:", error);
+      alert("No se pudo conectar con el backend");
     }
   };
 
@@ -159,18 +177,25 @@ export const ProductManager = () => {
       <div className="container bg-white shadow rounded my-4 p-0">
         <div className="text-center py-5 px-3">
           <img
-            src={productImage || "https://placehold.co/220x160?text=Product"}
-            alt="Product preview"
+            src={
+              productImage ||
+              "https://placehold.co/220x160?text=Product"
+            }
+            alt="Vista previa del producto"
             className="img-fluid rounded-4 shadow-sm mb-3"
-            style={{ width: "220px", height: "160px", objectFit: "cover" }}
+            style={{
+              width: "220px",
+              height: "160px",
+              objectFit: "cover"
+            }}
           />
 
-          <h1 className="fw-bold text-capitalize">
-            {categoryName}
+          <h1 className="fw-bold">
+            Administrar productos
           </h1>
 
           <p className="text-muted mb-0">
-            Agrega, edita o elimina productos de esta categoría.
+            Categoría #{categoryId}
           </p>
         </div>
 
@@ -181,66 +206,84 @@ export const ProductManager = () => {
             </span>
 
             <h5 className="fw-bold mb-3">
-              {editingId ? "Editar producto" : "Agregar nuevo producto"}
+              {editingId
+                ? "Editar producto"
+                : "Agregar nuevo producto"}
             </h5>
 
             <div className="mb-3">
-              <label className="form-label">URL de imagen</label>
+              <label className="form-label">
+                URL de imagen
+              </label>
+
               <input
                 type="text"
                 className="form-control"
-                placeholder="Product Image URL"
+                placeholder="URL de la imagen"
                 value={productImage}
                 onChange={(e) => setProductImage(e.target.value)}
               />
             </div>
 
             <div className="mb-3">
-              <label className="form-label">Nombre del producto</label>
+              <label className="form-label">
+                Nombre del producto
+              </label>
+
               <input
                 type="text"
                 className="form-control"
-                placeholder="Product Name"
+                placeholder="Nombre del producto"
                 value={productName}
                 onChange={(e) => setProductName(e.target.value)}
               />
             </div>
 
             <div className="mb-3">
-              <label className="form-label">Precio</label>
+              <label className="form-label">
+                Precio
+              </label>
+
               <input
-                type="text"
+                type="number"
+                min="0"
+                step="0.01"
                 className="form-control"
-                placeholder="Price"
+                placeholder="0.00"
                 value={productPrice}
                 onChange={(e) => setProductPrice(e.target.value)}
               />
             </div>
 
             <div className="mb-4">
-              <label className="form-label">Detalles</label>
+              <label className="form-label">
+                Descripción
+              </label>
+
               <textarea
                 className="form-control"
                 rows="3"
-                placeholder="Details"
+                placeholder="Descripción del producto"
                 value={productDetails}
                 onChange={(e) => setProductDetails(e.target.value)}
-              ></textarea>
+              />
             </div>
 
             <div className="d-flex justify-content-end gap-2">
               <button
+                type="button"
                 className="btn btn-outline-primary rounded-pill px-4"
                 onClick={clearForm}
               >
-                Cancel
+                Cancelar
               </button>
 
               <button
+                type="button"
                 className="btn btn-primary rounded-pill px-4"
                 onClick={saveProduct}
               >
-                {editingId ? "Update" : "Save"}
+                {editingId ? "Actualizar" : "Guardar"}
               </button>
             </div>
           </div>
@@ -249,7 +292,18 @@ export const ProductManager = () => {
             Productos guardados
           </h4>
 
-          {products.length === 0 ? (
+          {loading ? (
+            <div className="text-center py-5">
+              <div
+                className="spinner-border text-primary"
+                role="status"
+              >
+                <span className="visually-hidden">
+                  Cargando...
+                </span>
+              </div>
+            </div>
+          ) : products.length === 0 ? (
             <div className="text-center py-5 border rounded-4">
               <p className="text-muted mb-0">
                 Todavía no hay productos en esta categoría.
@@ -263,16 +317,23 @@ export const ProductManager = () => {
               >
                 <div className="col-md-2">
                   <img
-                    src={product.image || "https://placehold.co/120x90?text=Product"}
+                    src={
+                      product.image ||
+                      "https://placehold.co/120x90?text=Product"
+                    }
                     alt={product.name}
                     className="img-fluid rounded-4 shadow-sm"
-                    style={{ width: "120px", height: "90px", objectFit: "cover" }}
+                    style={{
+                      width: "120px",
+                      height: "90px",
+                      objectFit: "cover"
+                    }}
                   />
                 </div>
 
                 <div className="col-md-6">
-                  <span className="badge bg-success mb-2 text-capitalize">
-                    {categoryName}
+                  <span className="badge bg-success mb-2">
+                    Categoría #{categoryId}
                   </span>
 
                   <h5 className="fw-bold mb-1">
@@ -280,27 +341,30 @@ export const ProductManager = () => {
                   </h5>
 
                   <p className="text-muted mb-1">
-                    {product.description}
+                    {product.description ||
+                      "Sin descripción"}
                   </p>
 
                   <strong className="text-success">
-                    ${product.price}
+                    ${Number(product.price).toFixed(2)}
                   </strong>
                 </div>
 
                 <div className="col-md-4 text-md-end mt-3 mt-md-0">
                   <button
+                    type="button"
                     className="btn btn-outline-primary rounded-pill px-4 me-2"
                     onClick={() => editProduct(product)}
                   >
-                    Edit
+                    Editar
                   </button>
 
                   <button
+                    type="button"
                     className="btn btn-danger rounded-pill px-4"
                     onClick={() => deleteProduct(product.id)}
                   >
-                    Delete
+                    Eliminar
                   </button>
                 </div>
               </div>

@@ -2,6 +2,7 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import String, Boolean, ForeignKey, DateTime, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from datetime import datetime
+from sqlalchemy import UniqueConstraint
 
 db = SQLAlchemy()
 
@@ -98,6 +99,41 @@ class Product(db.Model):
             "image": self.image,
             "category_id": self.category_id
         }
+    
+class Favorite(db.Model):
+    __tablename__ = "favorite"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "user_id",
+            "product_id",
+            name="unique_user_product_favorite"
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("user.id"),
+        nullable=False
+    )
+
+    product_id: Mapped[int] = mapped_column(
+        ForeignKey("product.id"),
+        nullable=False
+    )
+
+    user: Mapped["User"] = relationship()
+    product: Mapped["Product"] = relationship()
+
+    def serialize(self):
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "product_id": self.product_id,
+            "product": self.product.serialize() if self.product else None
+        }
+
 
 
 class Cart(db.Model):
@@ -193,3 +229,4 @@ class Order_Items(db.Model):
             "product_name": self.product.name if self.product else "Producto ya no disponible",
             "product_image": self.product.image if self.product else None
         }
+    

@@ -10,7 +10,7 @@ export const CustomerHome = () => {
   const [selectedCategory, setSelectedCategory] = useState();
   const [products, setProducts] = useState([]);
   const [cart, setCart] = useState([]);
-  const [ratings, setRatings] = useState({});
+  const [favorites, setFavorites] = useState([]);
 
   useEffect(() => {
     getStore();
@@ -64,12 +64,17 @@ export const CustomerHome = () => {
     alert(`${product.name} agregado al carrito`);
   };
 
-  const rateProduct = (productId, rating) => {
-  setRatings({
-    ...ratings,
-    [productId]: rating
-  });
-};
+  const toggleFavorite = (product) => {
+    const productIsFavorite = favorites.includes(product.id);
+
+    if (productIsFavorite) {
+      setFavorites(
+        favorites.filter((productId) => productId !== product.id)
+      );
+    } else {
+      setFavorites([...favorites, product.id]);
+    }
+  };
 
 
 
@@ -156,19 +161,21 @@ export const CustomerHome = () => {
                 </div>
 
                 <div className="col-md-3 text-md-end text-start mt-3 mt-md-0">
-                  <div className="fs-5 mb-2">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <i
-                        key={star}
-                        className={
-                          star <= (ratings[product.id] || 0)
-                            ? "fa-solid fa-star text-warning me-1"
-                            : "fa-regular fa-star me-1"
-                        }
-                        style={{ cursor: "pointer" }}
-                        onClick={() => rateProduct(product.id, star)}
-                      ></i>
-                    ))}
+                  <div className="fs-4 mb-3"> Añadir a Favoritos  
+                    <i
+                      className={
+                        favorites.includes(product.id)
+                          ? "fa-solid fa-star text-warning"
+                          : "fa-regular fa-star"
+                      }
+                      style={{ cursor: "pointer" }}
+                      onClick={() => toggleFavorite(product)}
+                      title={
+                        favorites.includes(product.id)
+                          ? "Quitar de favoritos"
+                          : "Agregar a favoritos"
+                      }
+                    ></i>
                   </div>
 
                   <button className="btn btn-success rounded-pill px-4">

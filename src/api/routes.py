@@ -2,7 +2,7 @@
 This module takes care of starting the API Server, Loading the DB and Adding the endpoints
 """
 from flask import Flask, request, jsonify, url_for, Blueprint
-from api.models import db, User, Store, Category, Product, Cart, Cart_Items
+from api.models import db, User, Store, Category, Product, Cart, Cart_Items, Favorite
 from api.utils import generate_sitemap, APIException
 from flask_cors import CORS
 
@@ -29,7 +29,7 @@ def get_user(user_id):
 
 
 @api.route("/user", methods=["POST"])
-def create_user():
+def create_user():  
     data = request.get_json()
 
     if not data:
@@ -411,3 +411,101 @@ def delete_product(product_id):
         return jsonify({"error": "Error al eliminar el producto"}), 500
 
     return jsonify({"message": "Producto eliminado correctamente"}), 200
+
+@api.route("/favorites/user/<int:user_id>", methods=["GET"])
+def get_user_favorites(user_id):
+    user = User.query.get(user_id)
+
+    if user is None:
+        return jsonify({"error": "Usuario no encontrado"}), 404
+
+    favorites = Favorite.query.filter_by(user_id=user_id).all()
+
+    return jsonify(
+        [favorite.serialize() for favorite in favorites]
+    ), 200
+
+@api.route("/favorites", methods=["POST"])
+def add_favorite():
+    data = request.get_json()
+
+    if not data:
+        return jsonify({"error": "No enviaste datos"}), 400
+
+    user_id = data.get("user_id")
+    product_id = data.get("product_id")
+
+    if not user_id or not product_id:
+        return jsonify({
+            "error": "user_id y product_id son obligatorios"
+        }), 400
+
+    user = User.query.get(user_id)
+
+    if user is None:
+        return jsonify({"error": "Usuario no encontrado"}), 404
+
+    product = Product.query.get(product_id)
+
+    if product is None:
+        return jsonify({"error": "Producto no encontrado"}), 404
+
+    existing_favorite = Favorite.query.filter_by(
+        user_id=user_id,
+        product_id=product_id
+    ).first()
+
+    if existing_favorite:
+        return jsonify({
+            "error": "El producto ya está en favoritos"
+        }), 409
+
+    new_favorite = Favorite(
+        user_id=user_id,
+        product_id=product_id
+    )
+
+    try:
+        db.session.add(new_favorite)
+        db.session.commit()
+
+    except Exception as error:
+        db.session.rollback()
+        print("Error agregando favorito:", error)
+
+        return jsonify({
+            "error": "Error al agregar favorito"
+        }), 500
+
+    return jsonify(new_favorite.serialize()), 201
+
+@api.route(
+    "/favorites/user/<int:user_id>/product/<int:product_id>",
+    methods=["DELETE"]
+)
+def delete_favorite(user_id, product_id):
+    favorite = Favorite.query.filter_by(
+        user_id=user_id,
+        product_id=product_id
+    ).first()
+
+    if favorite is None:
+        return jsonify({
+            "error": "Favorito no encontrado"
+        }), 404
+
+    try:
+        db.session.delete(favorite)
+        db.session.commit()
+
+    except Exception as error:
+        db.session.rollback()
+        print("Error eliminando favorito:", error)
+
+        return jsonify({
+            "error": "Error al eliminar favorito"
+        }), 500
+
+    return jsonify({
+        "message": "Favorito eliminado correctamente"
+    }), 200
