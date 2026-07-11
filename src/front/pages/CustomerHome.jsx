@@ -1,82 +1,133 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
-
 export const CustomerHome = () => {
+  // Quitamos una posible "/" final para evitar URLs como //api/store
+  const backendUrl = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "");
 
-
+  // Datos generales de la tienda
   const [shopName, setShopName] = useState("Shop Name");
+  const [shopLogo, setShopLogo] = useState("");
+  const [shopDescription, setShopDescription] = useState(
+    "Explora nuestros productos y servicios disponibles."
+  );
+
+  // Categorías y productos
   const [categories, setCategories] = useState([]);
-  const [selectedCategory, setSelectedCategory] = useState();
+  const [selectedCategory, setSelectedCategory] = useState(null);
   const [products, setProducts] = useState([]);
-  const [cart, setCart] = useState([]);
+
+  // Favoritos temporales del frontend
   const [favorites, setFavorites] = useState([]);
 
+  // Estados visuales
+  const [loadingStore, setLoadingStore] = useState(true);
+  const [loadingProducts, setLoadingProducts] = useState(false);
+  const [error, setError] = useState("");
+
+  // Al abrir CustomerHome, carga la tienda y las categorías
   useEffect(() => {
     getStore();
     getCategories();
   }, []);
 
-  const getStore = async () => {
-    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/store`);
-    const data = await response.json();
-
-    if (response.ok) {
-      setShopName(data.name || "Shop Name");
-    }
-  };
-
-  const getCategories = async () => {
-    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/categories`);
-    const data = await response.json();
-
-    if (response.ok) {
-      setCategories(data);
-
-      if (data.length > 0) {
-        setSelectedCategory(data[0]);
-      }
-    }
-  };
-
+  // Cada vez que cambia la categoría seleccionada,
+  // carga los productos correspondientes
   useEffect(() => {
     if (selectedCategory) {
-      getProductsByCategory();
+      getProductsByCategory(selectedCategory.id);
     } else {
       setProducts([]);
     }
   }, [selectedCategory]);
 
-  const getProductsByCategory = async () => {
-    const response = await fetch(
-      `${import.meta.env.VITE_BACKEND_URL}/api/products/category/${selectedCategory.id}`
-    );
+  const getStore = async () => {
+    try {
+      setLoadingStore(true);
+      setError("");
 
-    const data = await response.json();
+      const response = await fetch(`${backendUrl}/api/store`);
+      const data = await response.json();
 
-    if (response.ok) {
-      setProducts(data);
+      if (!response.ok) {
+        throw new Error(data.error || data.message || "No se pudo cargar la tienda");
+      }
+
+      setShopName(data.name || "Shop Name");
+      setShopLogo(data.logo || "");
+      setShopDescription(
+        data.description ||
+          "Explora nuestros productos y servicios disponibles."
+      );
+    } catch (error) {
+      console.error("Error al cargar la tienda:", error);
+      setError("No se pudo cargar la información de la tienda.");
+    } finally {
+      setLoadingStore(false);
     }
   };
 
-  const addToCart = (product) => {
-    setCart([...cart, product]);
-    alert(`${product.name} agregado al carrito`);
+  const getCategories = async () => {
+    try {
+      setError("");
+
+      const response = await fetch(`${backendUrl}/api/categories`);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "No se pudieron cargar las categorías");
+      }
+
+      setCategories(data);
+
+      if (data.length > 0) {
+        setSelectedCategory(data[0]);
+      } else {
+        setSelectedCategory(null);
+        setProducts([]);
+      }
+    } catch (error) {
+      console.error("Error al cargar categorías:", error);
+      setError("No se pudieron cargar las categorías.");
+    }
   };
 
-  const toggleFavorite = (product) => {
-    const productIsFavorite = favorites.includes(product.id);
+  const getProductsByCategory = async (categoryId) => {
+    try {
+      setLoadingProducts(true);
+      setError("");
+
+      const response = await fetch(
+        `${backendUrl}/api/products/category/${categoryId}`
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "No se pudieron cargar los productos");
+      }
+
+      setProducts(data);
+    } catch (error) {
+      console.error("Error al cargar productos:", error);
+      setProducts([]);
+      setError("No se pudieron cargar los productos.");
+    } finally {
+      setLoadingProducts(false);
+    }
+  };
+
+  const toggleFavorite = (productId) => {
+    const productIsFavorite = favorites.includes(productId);
 
     if (productIsFavorite) {
       setFavorites(
-        favorites.filter((productId) => productId !== product.id)
+        favorites.filter((favoriteId) => favoriteId !== productId)
       );
     } else {
-      setFavorites([...favorites, product.id]);
+      setFavorites([...favorites, productId]);
     }
   };
-
-
 
   return (
     <div className="bg-light min-vh-100">
@@ -87,28 +138,44 @@ export const CustomerHome = () => {
       </nav>
 
       <div className="container bg-white shadow rounded my-4 p-0">
+        {/* Información principal de la tienda */}
         <div className="text-center py-5 px-3 bg-white">
-          <img
-            src="https://placehold.co/200x150?text=Logo"
-            alt="Logo"
-            className="img-fluid rounded-4 shadow-sm mb-3"
-            style={{ width: "190px", height: "150px", objectFit: "cover" }}
-          />
+          {loadingStore ? (
+            <div className="spinner-border text-primary mb-3" role="status">
+              <span className="visually-hidden">Cargando tienda...</span>
+            </div>
+          ) : (
+            <img
+              src={
+                shopLogo ||
+                "https://placehold.co/200x150?text=Logo"
+              }
+              alt={`Logo de ${shopName}`}
+              className="img-fluid rounded-4 shadow-sm mb-3"
+              style={{
+                width: "190px",
+                height: "150px",
+                objectFit: "cover"
+              }}
+            />
+          )}
 
-          <h1 className="fw-bold"> {shopName} </h1>
+          <h1 className="fw-bold">{shopName}</h1>
 
           <p className="text-muted mb-0">
-            Explora nuestros productos y servicios disponibles.
+            {shopDescription}
           </p>
         </div>
 
+        {/* Botones de categorías */}
         <div className="bg-dark py-3 px-4 d-flex justify-content-center flex-wrap gap-2">
           {categories.map((category) => (
             <button
               key={category.id}
+              type="button"
               className={
                 selectedCategory?.id === category.id
-                  ? "btn btn-light border border-dark text-capitalize"
+                  ? "btn btn-light border border-primary border-2 text-capitalize"
                   : "btn btn-light text-capitalize"
               }
               onClick={() => setSelectedCategory(category)}
@@ -119,11 +186,33 @@ export const CustomerHome = () => {
         </div>
 
         <div className="p-4">
+          {error && (
+            <div className="alert alert-danger text-center">
+              {error}
+            </div>
+          )}
+
           <h4 className="text-capitalize mb-4">
-            {selectedCategory ? selectedCategory.name : "Categorías"}
+            {selectedCategory
+              ? selectedCategory.name
+              : "Categorías"}
           </h4>
 
-          {products.length === 0 ? (
+          {categories.length === 0 && !error ? (
+            <div className="text-center py-5">
+              <p className="text-muted mb-0">
+                Todavía no hay categorías disponibles.
+              </p>
+            </div>
+          ) : loadingProducts ? (
+            <div className="text-center py-5">
+              <div className="spinner-border text-primary" role="status">
+                <span className="visually-hidden">
+                  Cargando productos...
+                </span>
+              </div>
+            </div>
+          ) : products.length === 0 ? (
             <div className="text-center py-5">
               <p className="text-muted mb-0">
                 No hay productos disponibles en esta categoría.
@@ -137,7 +226,10 @@ export const CustomerHome = () => {
               >
                 <div className="col-md-2">
                   <img
-                    src={product.image || "https://placehold.co/300x220?text=Producto"}
+                    src={
+                      product.image ||
+                      "https://placehold.co/300x220?text=Producto"
+                    }
                     alt={product.name}
                     className="img-fluid rounded-4 shadow-sm"
                     style={{
@@ -149,19 +241,29 @@ export const CustomerHome = () => {
                 </div>
 
                 <div className="col-md-7">
-                  <h5 className="fw-bold mb-2">{product.name}</h5>
+                  <span className="badge bg-success text-capitalize mb-2">
+                    {selectedCategory?.name}
+                  </span>
+
+                  <h5 className="fw-bold mb-2">
+                    {product.name}
+                  </h5>
 
                   <p className="text-muted mb-2">
-                    {product.description}
+                    {product.description || "Sin descripción"}
                   </p>
 
                   <span className="fs-5 fw-bold text-success">
-                    ${product.price}
+                    ${Number(product.price).toFixed(2)}
                   </span>
                 </div>
 
                 <div className="col-md-3 text-md-end text-start mt-3 mt-md-0">
-                  <div className="fs-4 mb-3"> Añadir a Favoritos  
+                  <div className="fs-6 mb-3">
+                    <span className="me-2">
+                      Añadir a favoritos
+                    </span>
+
                     <i
                       className={
                         favorites.includes(product.id)
@@ -169,17 +271,22 @@ export const CustomerHome = () => {
                           : "fa-regular fa-star"
                       }
                       style={{ cursor: "pointer" }}
-                      onClick={() => toggleFavorite(product)}
+                      onClick={() => toggleFavorite(product.id)}
                       title={
                         favorites.includes(product.id)
                           ? "Quitar de favoritos"
                           : "Agregar a favoritos"
                       }
-                    ></i>
+                    />
                   </div>
 
-                  <button className="btn btn-success rounded-pill px-4">
-                    <i className="fa-solid fa-cart-plus me-2"></i>
+                  {/* Solo visual por ahora.
+                      Después se conectará con el carrito. */}
+                  <button
+                    type="button"
+                    className="btn btn-success rounded-pill px-4"
+                  >
+                    <i className="fa-solid fa-cart-plus me-2" />
                     Agregar al carrito
                   </button>
                 </div>
