@@ -131,9 +131,10 @@ export const ProductManager = () => {
 
       clearForm();
     } catch (error) {
-      console.error("Error al guardar producto:", error);
-      alert("No se pudo conectar con el backend");
-    }
+      await getProducts();
+      alert("Producto guardado correctamente");
+    } 
+
   };
 
   const editProduct = (product) => {

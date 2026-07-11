@@ -51,7 +51,6 @@ def get_user(user_id):
 
 @api.route("/user", methods=["POST"])
 def create_user():
-def create_user():
     data = request.get_json()
 
     if not data:
@@ -195,7 +194,6 @@ def add_product_to_cart():
         return jsonify({"error": "Error al agregar el producto al carrito"}), 500
 
 
-
 @api.route("/cart/update-quantity", methods=["PUT"])
 def update_cart_item_quantity():
     data = request.get_json()
@@ -203,14 +201,12 @@ def update_cart_item_quantity():
     if not data or "cartItemId" not in data or "quantity" not in data:
         return jsonify({"error": "Datos no enviados o incompletos"}), 400
 
-
     user_id = data.get("userId")
     product_id = data.get("productId")
     quantity = data.get("quantity")
 
     if quantity < 1:
         return jsonify({"error": "La cantidad debe ser al menos 1"}), 400
-
 
     cart = db.session.scalar(db.select(Cart).filter_by(user_id=user_id))
     if not cart:
@@ -224,7 +220,6 @@ def update_cart_item_quantity():
     if not cart_item:
         return jsonify({"error": "Producto no encontrado en el carrito"}), 404
 
-
     cart_item.quantity = quantity
 
     try:
@@ -234,7 +229,6 @@ def update_cart_item_quantity():
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": "Error al actualizar la cantidad del producto en el carrito"}), 500
-
 
 
 @api.route("/cart/clear", methods=["DELETE"])
@@ -392,12 +386,17 @@ def get_products_by_category(category_id):
     if category is None:
         return jsonify({"error": "Categoría no encontrada"}), 404
 
-    products = db.session.scalars(
-        db.select(Product).filter_by(category_id=category_id)).all()
-    products = db.session.scalars(
-        db.select(Product).filter_by(category_id=category_id)).all()
+    statement = db.select(Product).filter_by(
+        category_id=category_id
+    )
 
-    return jsonify([product.serialize() for product in products]), 200
+    result = db.session.execute(statement)
+
+    products = result.unique().scalars().all()
+
+    return jsonify(
+        [product.serialize() for product in products]
+    ), 200
 
 
 @api.route("/products", methods=["POST"])
@@ -503,7 +502,6 @@ def delete_product(product_id):
     return jsonify({"message": "Producto eliminado correctamente"}), 200
 
 
-
 @api.route("/favorites/user/<int:user_id>", methods=["GET"])
 def get_user_favorites(user_id):
     user = User.query.get(user_id)
@@ -516,7 +514,6 @@ def get_user_favorites(user_id):
     return jsonify(
         [favorite.serialize() for favorite in favorites]
     ), 200
-
 
 
 @api.route("/favorites", methods=["POST"])
@@ -572,7 +569,6 @@ def add_favorite():
         }), 500
 
     return jsonify(new_favorite.serialize()), 201
-
 
 
 @api.route(
