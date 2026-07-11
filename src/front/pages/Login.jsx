@@ -1,27 +1,41 @@
 import React, { useState } from "react";
 import useGlobalReducer from "../hooks/useGlobalReducer.jsx";
 import { Link, useNavigate } from "react-router-dom";
+import { fetchLogin } from "../fetch.js";
 
 export const Login = () => {
   const { store, dispatch } = useGlobalReducer();
   const navigate = useNavigate();
+  const [inputData, setInputData] = useState({
+    email: "",
+    password: ""
+  });
 
-  const [selectedRole, setSelectedRole] = useState("");
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setInputData((prevData) => ({
+      ...prevData,
+      [name]: value,
+    }));
+  }
 
-  const handleLogin = (e) => {
+
+  const handleLogin = async (e) => {
     e.preventDefault();
 
-    if (selectedRole === "client") {
+    if (inputData.email === "" || inputData.password === "") {
+      alert("Por favor completa todos los campos");
+      return;
+    }
+
+    try{
+      await fetchLogin(inputData);
       navigate("/");
+
+    }catch (error) {
+      console.error('Error al iniciar sesión:', error);
     }
 
-    if (selectedRole === "admin") {
-      navigate("/admin-shop");
-    }
-
-    if (selectedRole === "") {
-      alert("Selecciona si eres cliente o administrador");
-    }
   };
 
   return (
@@ -30,42 +44,16 @@ export const Login = () => {
         <h3 className="text-center mb-4">Iniciar Sesión</h3>
 
         <form onSubmit={handleLogin}>
-          <p className="fw-semibold mb-2">
-            ¿Cómo deseas iniciar sesión?
-          </p>
-
-          <div className="d-flex gap-2 mb-4">
-            <button
-              type="button"
-              className={
-                selectedRole === "client"
-                  ? "btn btn-primary w-50"
-                  : "btn btn-outline-primary w-50"
-              }
-              onClick={() => setSelectedRole("client")}
-            >
-              Cliente
-            </button>
-
-            <button
-              type="button"
-              className={
-                selectedRole === "admin"
-                  ? "btn btn-dark w-50"
-                  : "btn btn-outline-dark w-50"
-              }
-              onClick={() => setSelectedRole("admin")}
-            >
-              Administrador
-            </button>
-          </div>
 
           <div className="mb-3">
-            <label className="form-label">Usuario</label>
+            <label className="form-label">Correo Electrónico</label>
             <input
-              type="text"
+              type="email"
               className="form-control"
-              placeholder="Ingresa tu usuario"
+              placeholder="Ingresa tu correo electrónico"
+              name="email"
+              value={inputData.email}
+              onChange={handleInputChange}
             />
           </div>
 
@@ -75,6 +63,9 @@ export const Login = () => {
               type="password"
               className="form-control"
               placeholder="Ingresa tu contraseña"
+              name="password"
+              value={inputData.password}
+              onChange={handleInputChange}
             />
           </div>
 
