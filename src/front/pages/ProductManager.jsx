@@ -4,6 +4,7 @@ import { Link, useParams } from "react-router-dom";
 export const ProductManager = () => {
   const { categoryId } = useParams();
 
+
   const [products, setProducts] = useState([]);
 
   const [productName, setProductName] = useState("");
@@ -26,11 +27,22 @@ export const ProductManager = () => {
         `${import.meta.env.VITE_BACKEND_URL}/api/products/category/${categoryId}`
       );
 
-      const data = await response.json();
+      const responseText = await response.text();
+
+      console.log("Código HTTP:", response.status);
+      console.log("Respuesta del backend:", responseText);
+
+      let data;
+
+      try {
+        data = JSON.parse(responseText);
+      } catch {
+        alert(`El backend devolvió una respuesta no válida. Código: ${response.status}`);
+        return;
+      }
 
       if (!response.ok) {
-        alert(data.error || "No se pudieron cargar los productos");
-        setProducts([]);
+        alert(data.error || "No se pudo guardar el producto");
         return;
       }
 
@@ -85,7 +97,19 @@ export const ProductManager = () => {
         body: JSON.stringify(productData)
       });
 
-      const data = await response.json();
+      const responseText = await response.text();
+
+      console.log("Código HTTP:", response.status);
+      console.log("Respuesta del backend:", responseText);
+
+      let data;
+
+      try {
+        data = JSON.parse(responseText);
+      } catch {
+        alert(`El backend devolvió una respuesta no válida. Código: ${response.status}`);
+        return;
+      }
 
       if (!response.ok) {
         alert(data.error || "No se pudo guardar el producto");

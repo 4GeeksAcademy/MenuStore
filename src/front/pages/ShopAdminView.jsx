@@ -7,7 +7,7 @@ const ShopAdminView = () => {
   const [shopName, setShopName] = useState("");
   const [categoryName, setCategoryName] = useState("");
   const [categories, setCategories] = useState([]);
-  const [selectedCategoryId, setSelectedCategoryId] = useState("");
+  const [selectedCategoryId, setSelectedCategoryId] = useState(""); // 
 
   useEffect(() => {
     getStore();
@@ -30,10 +30,10 @@ const ShopAdminView = () => {
     if (response.ok) {
       setCategories(data);
 
-      if (data.length > 0) {
+      if (data.length > 0) {     
         setSelectedCategoryId(data[0].id);
-      }
-    }
+      }  
+    }  
   };
 
   const saveShopName = async () => {
