@@ -21,7 +21,7 @@ class User(db.Model):
     is_active: Mapped[bool] = mapped_column(
         Boolean(), nullable=False, default=True)
 
-    cart: Mapped["Cart"] = relationship(back_populates="user", uselist=False)
+    cart: Mapped["Cart"] = relationship(back_populates="user", uselist=False, lazy="joined")
 
     def serialize(self):
         return {
@@ -60,7 +60,8 @@ class Category(db.Model):
 
     products: Mapped[list["Product"]] = relationship(
         back_populates="category",
-        cascade="all, delete-orphan"
+        cascade="all, delete-orphan",
+        lazy="selectin"
     )
 
     def serialize(self):
@@ -87,7 +88,7 @@ class Product(db.Model):
     category: Mapped["Category"] = relationship(back_populates="products")
 
     cart_items: Mapped[list["Cart_Items"]] = relationship(
-        back_populates="product", cascade="all, delete-orphan"
+        back_populates="product", cascade="all, delete-orphan", lazy="joined"
     )
 
     def serialize(self):
@@ -144,7 +145,7 @@ class Cart(db.Model):
     user: Mapped["User"] = relationship(back_populates="cart")
 
     cart_items: Mapped[list["Cart_Items"]] = relationship(
-        back_populates="cart", cascade="all, delete-orphan")
+        back_populates="cart", cascade="all, delete-orphan", lazy="selectin")
 
     def serialize(self):
         return {
@@ -164,7 +165,7 @@ class Cart_Items(db.Model):
         ForeignKey("product.id"), nullable=False)
 
     cart: Mapped["Cart"] = relationship(back_populates="cart_items")
-    product: Mapped["Product"] = relationship(back_populates="cart_items")
+    product: Mapped["Product"] = relationship(back_populates="cart_items", lazy="joined")
 
     def serialize(self):
         return {

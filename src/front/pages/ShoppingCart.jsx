@@ -26,6 +26,7 @@ const ProductItem = ({ id, imgUrl, name, price, details }) => {
             <button
                 className="btn btn-outline-dark btn-sm px-2"
                 onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                disabled={quantity === 1}
             >
                 -
             </button>

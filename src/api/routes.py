@@ -14,13 +14,13 @@ CORS(api)
 
 @api.route("/admin/users", methods=["GET"])
 def get_users():
-    users = User.query.all()
+    users = db.session.scalars(db.select(User)).all()
     return jsonify([user.serialize() for user in users]), 200
 
 
 @api.route("/user/<int:user_id>", methods=["GET"])
 def get_user(user_id):
-    user = User.query.get(user_id)
+    user = db.session.get(User, user_id)
 
     if user is None:
         return jsonify({"error": "Usuario no encontrado"}), 404
@@ -48,7 +48,7 @@ def create_user():
     if not password:
         return jsonify({"error": "La contraseña es obligatoria"}), 400
 
-    existing_user = User.query.filter_by(email=email).first()
+    existing_user = db.session.scalar(db.select(User).filter_by(email=email))
 
     if existing_user:
         return jsonify({"error": "Ya existe un usuario con ese correo electrónico"}), 400
@@ -72,7 +72,7 @@ def update_user(user_id):
     if not data:
         return jsonify({"error": "No enviaste datos"}), 400
 
-    user = User.query.get(user_id)
+    user = db.session.get(User, user_id)
 
     if user is None:
         return jsonify({"error": "Usuario no encontrado"}), 404
@@ -100,7 +100,7 @@ def update_user(user_id):
 
 @api.route("/user/<int:user_id>", methods=["DELETE"])
 def delete_user(user_id):
-    user = User.query.get(user_id)
+    user = db.session.get(User, user_id)
 
     if user is None:
         return jsonify({"error": "Usuario no encontrado"}), 404
@@ -117,7 +117,7 @@ def delete_user(user_id):
 
 @api.route("/user/cart/<int:user_id>", methods=["GET"])
 def get_user_cart(user_id):
-    user = User.query.get(user_id)
+    user = db.session.get(User, user_id)
 
     if user is None:
         return jsonify({"error": "Usuario no encontrado"}), 404
@@ -141,21 +141,21 @@ def add_product_to_cart():
     if not data:
         return jsonify({"error": "Datos no enviados"}), 400
 
-    user_id = data.get("user_id")
-    product_id = data.get("product_id")
+    user_id = data.get("userId")
+    product_id = data.get("productId")
 
     if not user_id or not product_id:
-        return jsonify({"error": "Falta user_id o product_id"}), 400
+        return jsonify({"error": "Falta userId o productId"}), 400
 
-    cart = Cart.query.filter_by(user_id=user_id).first()
+    cart = db.session.scalar(db.select(Cart).filter_by(user_id=user_id))
 
     if not cart:
         cart = Cart(user_id=user_id)
         db.session.add(cart)
         db.session.flush()
 
-    cart_items = Cart_Items.query.filter_by(
-        cart_id=cart.id, product_id=product_id).first()
+    cart_items = db.session.scalar(db.select(Cart_Items).filter_by(
+        cart_id=cart.id, product_id=product_id))
 
     if cart_items:
         cart_items.quantity += 1
@@ -166,16 +166,69 @@ def add_product_to_cart():
 
     try:
         db.session.commit()
-        return jsonify({"message": "Producto agregado al carrito correctamente"}), 200
+        return jsonify({"message": "Producto agregado al carrito correctamente",
+                        "cart": cart.serialize()}), 200
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": "Error al agregar el producto al carrito"}), 500
+    
+
+@api.route("/cart/update-quantity", methods=["PUT"])
+def update_cart_item_quantity():
+    data = request.get_json()
+
+    if not data or "cartItemId" not in data or "quantity" not in data:
+        return jsonify({"error": "Datos no enviados o incompletos"}), 400
+    
+    user_id = data.get("userId")
+    product_id = data.get("productId")
+    quantity = data.get("quantity")
+
+    if quantity < 1:
+        return jsonify({"error": "La cantidad debe ser al menos 1"}), 400
+    
+    cart = db.session.scalar(db.select(Cart).filter_by(user_id=user_id))
+    if not cart:
+        return jsonify({"error": "Carrito no encontrado para el usuario"}), 404
+    
+    cart_item = db.session.scalar(db.select(Cart_Items).filter_by(cart_id=cart.id, product_id=product_id))
+    if not cart_item:
+        return jsonify({"error": "Producto no encontrado en el carrito"}), 404
+    
+    cart_item.quantity = quantity
+
+    try:
+        db.session.commit()
+        return jsonify({"message": "Cantidad del producto en el carrito actualizada correctamente",
+                        "cart": cart.serialize()}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": "Error al actualizar la cantidad del producto en el carrito"}), 500
+    
+
+@api.route("/cart/clear", methods=["DELETE"])
+def clear_cart():
+    data = request.get_json()
+
+    if not data or "userId" not in data:
+        return jsonify({"error": "Datos no enviados o incompletos"}), 400
+
+    user_id = data.get("userId")
+
+    cart = db.session.scalar(db.select(Cart).filter_by(user_id=user_id))
+    if not cart:
+        return jsonify({"error": "Carrito no encontrado para el usuario"}), 404
+
+    db.session.execute(db.delete(Cart_Items).where(Cart_Items.cart_id == cart.id))
+    db.session.commit()
+
+    return jsonify({"message": "Carrito vaciado correctamente"}), 200
 
 
 @api.route("/store", methods=["GET"])
 def get_store():
 
-    store = Store.query.first()
+    store = db.session.scalar(db.select(Store).first())
 
     if store is None:
         return jsonify({
@@ -199,7 +252,7 @@ def create_store():
     if not name:
         return jsonify({"error": "El nombre de la tienda es obligatorio"}), 400
 
-    existing_store = Store.query.first()
+    existing_store = db.session.scalar(db.select(Store).first())
 
     if existing_store:
         return jsonify({"error": "Ya existe una tienda"}), 400
@@ -227,7 +280,7 @@ def update_store():
     if not data:
         return jsonify({"error": "No enviaste datos"}), 400
 
-    store = Store.query.first()
+    store = db.session.scalar(db.select(Store).first())
 
     if store is None:
         return jsonify({"error": "No existe ninguna tienda todavía"}), 404
@@ -252,7 +305,7 @@ def update_store():
 
 @api.route("/categories", methods=["GET"])
 def get_categories():
-    categories = Category.query.all()
+    categories = db.session.scalars(db.select(Category)).all()
 
     return jsonify([category.serialize() for category in categories]), 200
 
@@ -283,7 +336,7 @@ def create_category():
 
 @api.route("/categories/<int:category_id>", methods=["DELETE"])
 def delete_category(category_id):
-    category = Category.query.get(category_id)
+    category = db.session.get(Category, category_id)
 
     if category is None:
         return jsonify({"error": "Categoría no encontrada"}), 404
@@ -300,12 +353,12 @@ def delete_category(category_id):
 
 @api.route("/products/category/<int:category_id>", methods=["GET"])
 def get_products_by_category(category_id):
-    category = Category.query.get(category_id)
+    category = db.session.get(Category, category_id)
 
     if category is None:
         return jsonify({"error": "Categoría no encontrada"}), 404
 
-    products = Product.query.filter_by(category_id=category_id).all()
+    products = db.session.scalars(db.select(Product).filter_by(category_id=category_id)).all()
 
     return jsonify([product.serialize() for product in products]), 200
 
@@ -332,7 +385,7 @@ def create_product():
     if not category_id:
         return jsonify({"error": "La categoría es obligatoria"}), 400
 
-    category = Category.query.get(category_id)
+    category = db.session.get(Category, category_id)
 
     if category is None:
         return jsonify({"error": "Categoría no encontrada"}), 404
@@ -362,7 +415,7 @@ def update_product(product_id):
     if not data:
         return jsonify({"error": "No enviaste datos"}), 400
 
-    product = Product.query.get(product_id)
+    product = db.session.get(Product, product_id)
 
     if product is None:
         return jsonify({"error": "Producto no encontrado"}), 404
@@ -380,7 +433,7 @@ def update_product(product_id):
         product.image = data["image"]
 
     if "category_id" in data:
-        category = Category.query.get(data["category_id"])
+        category = db.session.get(Category, data["category_id"])
 
         if category is None:
             return jsonify({"error": "Categoría no encontrada"}), 404
@@ -398,7 +451,7 @@ def update_product(product_id):
 
 @api.route("/products/<int:product_id>", methods=["DELETE"])
 def delete_product(product_id):
-    product = Product.query.get(product_id)
+    product = db.session.get(Product, product_id)
 
     if product is None:
         return jsonify({"error": "Producto no encontrado"}), 404
