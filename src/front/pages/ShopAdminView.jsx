@@ -1,13 +1,21 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
+import {
+  fetchStore,
+  fetchUpdateStore,
+  fetchCategories,
+  fetchCreateCategory,
+  fetchDeleteCategory
+} from "../fetch.js";
+
 const ShopAdminView = () => {
   const navigate = useNavigate();
 
   const [shopName, setShopName] = useState("");
   const [categoryName, setCategoryName] = useState("");
   const [categories, setCategories] = useState([]);
-  const [selectedCategoryId, setSelectedCategoryId] = useState(""); // 
+  const [selectedCategoryId, setSelectedCategoryId] = useState("");
 
   useEffect(() => {
     getStore();
@@ -15,25 +23,31 @@ const ShopAdminView = () => {
   }, []);
 
   const getStore = async () => {
-    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/store`);
-    const data = await response.json();
+    try {
+      const data = await fetchStore();
 
-    if (response.ok) {
       setShopName(data.name || "");
+    } catch (error) {
+      console.error("Error al cargar la tienda:", error);
+      alert(error.message || "No se pudo cargar la tienda");
     }
   };
 
   const getCategories = async () => {
-    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/categories`);
-    const data = await response.json();
+    try {
+      const data = await fetchCategories();
 
-    if (response.ok) {
       setCategories(data);
 
-      if (data.length > 0) {     
+      if (data.length > 0) {
         setSelectedCategoryId(data[0].id);
-      }  
-    }  
+      } else {
+        setSelectedCategoryId("");
+      }
+    } catch (error) {
+      console.error("Error al cargar las categorías:", error);
+      alert(error.message || "No se pudieron cargar las categorías");
+    }
   };
 
   const saveShopName = async () => {
@@ -42,18 +56,17 @@ const ShopAdminView = () => {
       return;
     }
 
-    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/store`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        "name": shopName
-      })
-    });
+    try {
+      const data = await fetchUpdateStore({
+        name: shopName.trim()
+      });
 
-    if (response.ok) {
+      setShopName(data.name || shopName);
+
       alert("Nombre guardado correctamente");
+    } catch (error) {
+      console.error("Error al guardar el nombre:", error);
+      alert(error.message || "No se pudo guardar el nombre");
     }
   };
 
@@ -61,29 +74,24 @@ const ShopAdminView = () => {
     console.log("Botón añadir presionado");
     console.log("categoryName:", categoryName);
 
-    
     if (!categoryName.trim()) {
       alert("Escribe una categoría");
       return;
     }
 
-    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/categories`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        "name": categoryName.toLowerCase()
-      })
-    });
+    try {
+      const data = await fetchCreateCategory({
+        name: categoryName.trim().toLowerCase()
+      });
 
-    const data = await response.json();
-
-    if (response.ok) {
       setCategories([...categories, data]);
       setSelectedCategoryId(data.id);
       setCategoryName("");
+
       alert("Categoría agregada correctamente");
+    } catch (error) {
+      console.error("Error al crear la categoría:", error);
+      alert(error.message || "No se pudo crear la categoría");
     }
   };
 
@@ -93,16 +101,12 @@ const ShopAdminView = () => {
       return;
     }
 
-    const response = await fetch(
-      `${import.meta.env.VITE_BACKEND_URL}/api/categories/${selectedCategoryId}`,
-      {
-        method: "DELETE"
-      }
-    );
+    try {
+      await fetchDeleteCategory(selectedCategoryId);
 
-    if (response.ok) {
       const updatedCategories = categories.filter(
-        (category) => category.id !== Number(selectedCategoryId)
+        (category) =>
+          category.id !== Number(selectedCategoryId)
       );
 
       setCategories(updatedCategories);
@@ -114,6 +118,9 @@ const ShopAdminView = () => {
       }
 
       alert("Categoría eliminada correctamente");
+    } catch (error) {
+      console.error("Error al eliminar la categoría:", error);
+      alert(error.message || "No se pudo eliminar la categoría");
     }
   };
 
@@ -128,7 +135,10 @@ const ShopAdminView = () => {
           Admin Panel
         </h5>
 
-        <button className="btn btn-outline-light" onClick={goBack}>
+        <button
+          className="btn btn-outline-light"
+          onClick={goBack}
+        >
           Ir a tienda
         </button>
       </nav>
@@ -139,7 +149,11 @@ const ShopAdminView = () => {
             src="https://placehold.co/200x150?text=Store"
             className="img-fluid rounded-4 shadow-sm mb-3"
             alt="Store storefront"
-            style={{ width: "190px", height: "150px", objectFit: "cover" }}
+            style={{
+              width: "190px",
+              height: "150px",
+              objectFit: "cover"
+            }}
           />
 
           <h1 className="fw-bold">
@@ -168,7 +182,10 @@ const ShopAdminView = () => {
             </div>
 
             <div className="col-md-4 text-md-end mt-3 mt-md-0">
-              <button type="button" className="btn btn-primary rounded-pill px-4">
+              <button
+                type="button"
+                className="btn btn-primary rounded-pill px-4"
+              >
                 Edit Image
               </button>
             </div>
@@ -220,14 +237,18 @@ const ShopAdminView = () => {
                   className="form-control"
                   placeholder="New category"
                   value={categoryName}
-                  onChange={(e) => setCategoryName(e.target.value)}
+                  onChange={(e) =>
+                    setCategoryName(e.target.value)
+                  }
                   style={{ maxWidth: "220px" }}
                 />
 
                 <select
                   className="form-select"
                   value={selectedCategoryId}
-                  onChange={(e) => setSelectedCategoryId(e.target.value)}
+                  onChange={(e) =>
+                    setSelectedCategoryId(e.target.value)
+                  }
                   style={{ maxWidth: "240px" }}
                 >
                   <option value="">
@@ -235,7 +256,10 @@ const ShopAdminView = () => {
                   </option>
 
                   {categories.map((category) => (
-                    <option key={category.id} value={category.id}>
+                    <option
+                      key={category.id}
+                      value={category.id}
+                    >
                       {category.name}
                     </option>
                   ))}

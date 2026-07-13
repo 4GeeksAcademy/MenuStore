@@ -15,13 +15,13 @@ class User(db.Model):
     name: Mapped[str] = mapped_column(String(120), nullable=False)
     email: Mapped[str] = mapped_column(
         String(120), unique=True, nullable=False)
-    password: Mapped[str] = mapped_column(String(120), nullable=False)
+    password: Mapped[str] = mapped_column(String(255), nullable=False)
     role: Mapped[str] = mapped_column(
         String(20), nullable=False, default="client")
     is_active: Mapped[bool] = mapped_column(
         Boolean(), nullable=False, default=True)
 
-    cart: Mapped["Cart"] = relationship(back_populates="user", uselist=False, lazy="joined")
+    cart: Mapped["Cart | None"] = relationship(back_populates="user", uselist=False, lazy="joined")
 
     def serialize(self):
         return {

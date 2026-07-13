@@ -1,9 +1,15 @@
 import React, { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
+import {
+  fetchProductsByCategory,
+  fetchCreateProduct,
+  fetchUpdateProduct,
+  fetchDeleteProduct
+} from "../fetch.js";
+
 export const ProductManager = () => {
   const { categoryId } = useParams();
-
 
   const [products, setProducts] = useState([]);
 
@@ -23,33 +29,13 @@ export const ProductManager = () => {
     try {
       setLoading(true);
 
-      const response = await fetch(
-        `${import.meta.env.VITE_BACKEND_URL}/api/products/category/${categoryId}`
-      );
-
-      const responseText = await response.text();
-
-      console.log("Código HTTP:", response.status);
-      console.log("Respuesta del backend:", responseText);
-
-      let data;
-
-      try {
-        data = JSON.parse(responseText);
-      } catch {
-        alert(`El backend devolvió una respuesta no válida. Código: ${response.status}`);
-        return;
-      }
-
-      if (!response.ok) {
-        alert(data.error || "No se pudo guardar el producto");
-        return;
-      }
+      const data = await fetchProductsByCategory(categoryId);
 
       setProducts(data);
     } catch (error) {
       console.error("Error al cargar productos:", error);
-      alert("No se pudo conectar con el backend");
+      setProducts([]);
+      alert(error.message || "No se pudieron cargar los productos");
     } finally {
       setLoading(false);
     }
@@ -83,58 +69,34 @@ export const ProductManager = () => {
     };
 
     try {
-      const url = editingId
-        ? `${import.meta.env.VITE_BACKEND_URL}/api/products/${editingId}`
-        : `${import.meta.env.VITE_BACKEND_URL}/api/products`;
-
-      const method = editingId ? "PUT" : "POST";
-
-      const response = await fetch(url, {
-        method,
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(productData)
-      });
-
-      const responseText = await response.text();
-
-      console.log("Código HTTP:", response.status);
-      console.log("Respuesta del backend:", responseText);
-
-      let data;
-
-      try {
-        data = JSON.parse(responseText);
-      } catch {
-        alert(`El backend devolvió una respuesta no válida. Código: ${response.status}`);
-        return;
-      }
-
-      if (!response.ok) {
-        alert(data.error || "No se pudo guardar el producto");
-        return;
-      }
-
       if (editingId) {
+        const updatedProduct = await fetchUpdateProduct(
+          editingId,
+          productData
+        );
+
         setProducts(
           products.map((product) =>
-            product.id === editingId ? data : product
+            product.id === editingId
+              ? updatedProduct
+              : product
           )
         );
 
         alert("Producto actualizado correctamente");
       } else {
-        setProducts([...products, data]);
+        const newProduct = await fetchCreateProduct(productData);
+
+        setProducts([...products, newProduct]);
+
         alert("Producto guardado correctamente");
       }
 
       clearForm();
     } catch (error) {
-      await getProducts();
-      alert("Producto guardado correctamente");
-    } 
-
+      console.error("Error al guardar producto:", error);
+      alert(error.message || "No se pudo guardar el producto");
+    }
   };
 
   const editProduct = (product) => {
@@ -158,19 +120,7 @@ export const ProductManager = () => {
     if (!confirmed) return;
 
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_BACKEND_URL}/api/products/${productId}`,
-        {
-          method: "DELETE"
-        }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        alert(data.error || "No se pudo eliminar el producto");
-        return;
-      }
+      const data = await fetchDeleteProduct(productId);
 
       setProducts(
         products.filter((product) => product.id !== productId)
@@ -180,10 +130,12 @@ export const ProductManager = () => {
         clearForm();
       }
 
-      alert(data.message || "Producto eliminado correctamente");
+      alert(
+        data.message || "Producto eliminado correctamente"
+      );
     } catch (error) {
       console.error("Error al eliminar producto:", error);
-      alert("No se pudo conectar con el backend");
+      alert(error.message || "No se pudo eliminar el producto");
     }
   };
 
@@ -366,8 +318,7 @@ export const ProductManager = () => {
                   </h5>
 
                   <p className="text-muted mb-1">
-                    {product.description ||
-                      "Sin descripción"}
+                    {product.description || "Sin descripción"}
                   </p>
 
                   <strong className="text-success">
