@@ -1,5 +1,7 @@
 
-const urlApi = "https://animated-memory-5g4qw67xgjjrh44xp-3001.app.github.dev/api"
+// const urlApi = "https://animated-memory-5g4qw67xgjjrh44xp-3001.app.github.dev/api" //
+
+const urlApi = `${import.meta.env.VITE_BACKEND_URL}/api`; // debido a falla al momento de ejecutar funciones de admin shop me sugirio esta urlAPI
 
 export const fetchRegister = async (userData) => {
         try{    

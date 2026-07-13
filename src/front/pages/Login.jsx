@@ -1,11 +1,10 @@
 import React, { useState } from "react";
-import useGlobalReducer from "../hooks/useGlobalReducer.jsx";
 import { Link, useNavigate } from "react-router-dom";
 import { fetchLogin } from "../fetch.js";
 
 export const Login = () => {
-  const { store, dispatch } = useGlobalReducer();
   const navigate = useNavigate();
+
   const [inputData, setInputData] = useState({
     email: "",
     password: ""
@@ -13,40 +12,80 @@ export const Login = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+
     setInputData((prevData) => ({
       ...prevData,
-      [name]: value,
+      [name]: value
     }));
-  }
-
+  };
 
   const handleLogin = async (e) => {
     e.preventDefault();
 
-    if (inputData.email === "" || inputData.password === "") {
+    if (
+      !inputData.email.trim() ||
+      !inputData.password.trim()
+    ) {
       alert("Por favor completa todos los campos");
       return;
     }
 
-    try{
-      await fetchLogin(inputData);
+    try {
+      const data = await fetchLogin({
+        email: inputData.email.trim(),
+        password: inputData.password
+      });
+
+      // Esta página es solamente para clientes
+      if (data.user?.role !== "client") {
+        alert(
+          "Estas credenciales no pertenecen a una cuenta de cliente"
+        );
+        return;
+      }
+
+      if (data.token) {
+        localStorage.setItem("token", data.token);
+      }
+
+      if (data.user) {
+        localStorage.setItem(
+          "user",
+          JSON.stringify(data.user)
+        );
+      }
+
       navigate("/");
+    } catch (error) {
+      console.error("Error al iniciar sesión:", error);
 
-    }catch (error) {
-      console.error('Error al iniciar sesión:', error);
+      alert(
+        error.message ||
+          "Correo o contraseña incorrectos"
+      );
     }
-
   };
 
   return (
     <div className="bg-light d-flex justify-content-center align-items-center vh-100">
-      <div className="card shadow p-4" style={{ width: "360px" }}>
-        <h3 className="text-center mb-4">Iniciar Sesión</h3>
+      <div
+        className="card shadow p-4"
+        style={{ width: "360px" }}
+      >
+        <h3 className="text-center mb-2">
+          Iniciar sesión
+        </h3>
+
+        <p className="text-center text-muted mb-4">
+          Acceso para clientes
+        </p>
 
         <form onSubmit={handleLogin}>
-
           <div className="mb-3">
-            <label className="form-label">Correo Electrónico</label>
+            <label className="form-label">
+              Correo electrónico
+            </label>
+
             <input
               type="email"
               className="form-control"
@@ -58,7 +97,10 @@ export const Login = () => {
           </div>
 
           <div className="mb-4">
-            <label className="form-label">Contraseña</label>
+            <label className="form-label">
+              Contraseña
+            </label>
+
             <input
               type="password"
               className="form-control"
@@ -69,8 +111,11 @@ export const Login = () => {
             />
           </div>
 
-          <button type="submit" className="btn btn-primary w-100">
-            Ingresar
+          <button
+            type="submit"
+            className="btn btn-primary w-100"
+          >
+            Ingresar como cliente
           </button>
 
           <div className="text-center mt-4">
@@ -83,6 +128,15 @@ export const Login = () => {
               className="text-decoration-none fw-semibold"
             >
               Regístrate aquí
+            </Link>
+          </div>
+
+          <div className="text-center mt-3">
+            <Link
+              to="/admin-login"
+              className="text-decoration-none text-secondary"
+            >
+              Acceso para administrador
             </Link>
           </div>
         </form>

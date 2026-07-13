@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
-export const CustomerHome = () => {
-  // Quitamos una posible "/" final para evitar URLs como //api/store
-  const backendUrl = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "");
+import {
+  fetchStore,
+  fetchCategories,
+  fetchProductsByCategory
+} from "../fetch.js";
 
+export const CustomerHome = () => {
   // Datos generales de la tienda
   const [shopName, setShopName] = useState("Shop Name");
   const [shopLogo, setShopLogo] = useState("");
@@ -46,12 +49,7 @@ export const CustomerHome = () => {
       setLoadingStore(true);
       setError("");
 
-      const response = await fetch(`${backendUrl}/api/store`);
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || data.message || "No se pudo cargar la tienda");
-      }
+      const data = await fetchStore();
 
       setShopName(data.name || "Shop Name");
       setShopLogo(data.logo || "");
@@ -61,7 +59,11 @@ export const CustomerHome = () => {
       );
     } catch (error) {
       console.error("Error al cargar la tienda:", error);
-      setError("No se pudo cargar la información de la tienda.");
+
+      setError(
+        error.message ||
+          "No se pudo cargar la información de la tienda."
+      );
     } finally {
       setLoadingStore(false);
     }
@@ -71,12 +73,7 @@ export const CustomerHome = () => {
     try {
       setError("");
 
-      const response = await fetch(`${backendUrl}/api/categories`);
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "No se pudieron cargar las categorías");
-      }
+      const data = await fetchCategories();
 
       setCategories(data);
 
@@ -88,7 +85,11 @@ export const CustomerHome = () => {
       }
     } catch (error) {
       console.error("Error al cargar categorías:", error);
-      setError("No se pudieron cargar las categorías.");
+
+      setError(
+        error.message ||
+          "No se pudieron cargar las categorías."
+      );
     }
   };
 
@@ -97,21 +98,18 @@ export const CustomerHome = () => {
       setLoadingProducts(true);
       setError("");
 
-      const response = await fetch(
-        `${backendUrl}/api/products/category/${categoryId}`
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "No se pudieron cargar los productos");
-      }
+      const data = await fetchProductsByCategory(categoryId);
 
       setProducts(data);
     } catch (error) {
       console.error("Error al cargar productos:", error);
+
       setProducts([]);
-      setError("No se pudieron cargar los productos.");
+
+      setError(
+        error.message ||
+          "No se pudieron cargar los productos."
+      );
     } finally {
       setLoadingProducts(false);
     }
@@ -122,7 +120,9 @@ export const CustomerHome = () => {
 
     if (productIsFavorite) {
       setFavorites(
-        favorites.filter((favoriteId) => favoriteId !== productId)
+        favorites.filter(
+          (favoriteId) => favoriteId !== productId
+        )
       );
     } else {
       setFavorites([...favorites, productId]);
@@ -141,8 +141,13 @@ export const CustomerHome = () => {
         {/* Información principal de la tienda */}
         <div className="text-center py-5 px-3 bg-white">
           {loadingStore ? (
-            <div className="spinner-border text-primary mb-3" role="status">
-              <span className="visually-hidden">Cargando tienda...</span>
+            <div
+              className="spinner-border text-primary mb-3"
+              role="status"
+            >
+              <span className="visually-hidden">
+                Cargando tienda...
+              </span>
             </div>
           ) : (
             <img
@@ -160,7 +165,9 @@ export const CustomerHome = () => {
             />
           )}
 
-          <h1 className="fw-bold">{shopName}</h1>
+          <h1 className="fw-bold">
+            {shopName}
+          </h1>
 
           <p className="text-muted mb-0">
             {shopDescription}
@@ -178,7 +185,9 @@ export const CustomerHome = () => {
                   ? "btn btn-light border border-primary border-2 text-capitalize"
                   : "btn btn-light text-capitalize"
               }
-              onClick={() => setSelectedCategory(category)}
+              onClick={() =>
+                setSelectedCategory(category)
+              }
             >
               {category.name}
             </button>
@@ -206,7 +215,10 @@ export const CustomerHome = () => {
             </div>
           ) : loadingProducts ? (
             <div className="text-center py-5">
-              <div className="spinner-border text-primary" role="status">
+              <div
+                className="spinner-border text-primary"
+                role="status"
+              >
                 <span className="visually-hidden">
                   Cargando productos...
                 </span>
@@ -271,7 +283,9 @@ export const CustomerHome = () => {
                           : "fa-regular fa-star"
                       }
                       style={{ cursor: "pointer" }}
-                      onClick={() => toggleFavorite(product.id)}
+                      onClick={() =>
+                        toggleFavorite(product.id)
+                      }
                       title={
                         favorites.includes(product.id)
                           ? "Quitar de favoritos"
