@@ -1,42 +1,55 @@
 """
-This module takes care of starting the API Server, Loading the DB and Adding the endpoints
+This module takes care of starting the API Server,
+Loading the DB and Adding the endpoints.
 """
-from flask import Flask, request, jsonify, url_for, Blueprint
-from api.models import db, User, Store, Category, Product, Cart, Cart_Items, Favorite
-from api.utils import generate_sitemap, APIException
+
+from flask import request, jsonify, Blueprint
 from flask_cors import CORS
 
-api = Blueprint('api', __name__)
+from werkzeug.security import (
+    generate_password_hash,
+    check_password_hash
+)
 
-# Allow CORS requests to this API
+
+from flask_jwt_extended import (
+    create_access_token,
+    jwt_required,
+    get_jwt_identity
+)
+
+from api.models import (
+    db,
+    User,
+    Store,
+    Category,
+    Product,
+    Cart,
+    Cart_Items,
+    Favorite
+)
+
+
+api = Blueprint("api", __name__)
+
+# Permitir solicitudes CORS a esta API
 CORS(api)
 
 
+# =========================================================
+# USUARIOS
+# =========================================================
+
 @api.route("/admin/users", methods=["GET"])
 def get_users():
-    users = db.session.scalars(db.select(User)).all()
-    return jsonify([user.serialize() for user in users]), 200
+    statement = db.select(User)
+    result = db.session.execute(statement)
 
+    users = result.unique().scalars().all()
 
-@api.route("/user/login", methods=["POST"])
-def login_user():
-    data = request.get_json()
-
-    if not data:
-        return jsonify({"error": "No enviaste datos"}), 400
-
-    email = data.get("email")
-    password = data.get("password")
-
-    if not email or not password:
-        return jsonify({"error": "Falta email o password"}), 400
-
-    user = db.session.scalar(db.select(User).filter_by(email=email))
-
-    if not user or user.password != password:
-        return jsonify({"error": "Credenciales incorrectas"}), 401
-
-    return jsonify(user.serialize()), 200
+    return jsonify(
+        [user.serialize() for user in users]
+    ), 200
 
 
 @api.route("/user/<int:user_id>", methods=["GET"])
@@ -44,7 +57,9 @@ def get_user(user_id):
     user = db.session.get(User, user_id)
 
     if user is None:
-        return jsonify({"error": "Usuario no encontrado"}), 404
+        return jsonify({
+            "error": "Usuario no encontrado"
+        }), 404
 
     return jsonify(user.serialize()), 200
 
@@ -54,36 +69,157 @@ def create_user():
     data = request.get_json()
 
     if not data:
-        return jsonify({"error": "No enviaste datos"}), 400
+        return jsonify({
+            "error": "No enviaste datos"
+        }), 400
 
-    username = data.get("username")
+    name = data.get("name")
     email = data.get("email")
     password = data.get("password")
 
-    if not username:
-        return jsonify({"error": "El nombre de usuario es obligatorio"}), 400
+    if not name or not name.strip():
+        return jsonify({
+            "error": "El nombre es obligatorio"
+        }), 400
 
-    if not email:
-        return jsonify({"error": "El correo electrónico es obligatorio"}), 400
+    if not email or not email.strip():
+        return jsonify({
+            "error": "El correo electrónico es obligatorio"
+        }), 400
 
     if not password:
-        return jsonify({"error": "La contraseña es obligatoria"}), 400
+        return jsonify({
+            "error": "La contraseña es obligatoria"
+        }), 400
 
-    existing_user = db.session.scalar(db.select(User).filter_by(email=email))
+    if len(password) < 6:
+        return jsonify({
+            "error": "La contraseña debe tener al menos 6 caracteres"
+        }), 400
+
+    clean_name = name.strip()
+    clean_email = email.strip().lower()
+
+    existing_user = db.session.scalar(
+        db.select(User).filter_by(email=clean_email)
+    )
 
     if existing_user:
-        return jsonify({"error": "Ya existe un usuario con ese correo electrónico"}), 400
+        return jsonify({
+            "error": "Ya existe un usuario con ese correo electrónico"
+        }), 409
 
-    new_user = User(name=username, email=email, password=password)
+    hashed_password = generate_password_hash(password)
+
+    new_user = User(
+        name=clean_name,
+        email=clean_email,
+        password=hashed_password,
+        role="client",
+        is_active=True
+    )
 
     try:
         db.session.add(new_user)
         db.session.commit()
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({"error": "Error al crear el usuario"}), 500
 
-    return jsonify(new_user.serialize()), 201
+        return jsonify({
+            "message": "Usuario registrado correctamente",
+            "user": new_user.serialize()
+        }), 201
+
+    except Exception as error:
+        db.session.rollback()
+
+        print("Error al crear usuario:", error)
+
+        return jsonify({
+            "error": "Error al crear el usuario"
+        }), 500
+
+
+# =========================================================
+# LOGIN DEL CLIENTE CON JWT
+# =========================================================
+
+@api.route("/user/login", methods=["POST"])
+def login_client():
+    data = request.get_json()
+
+    if not data:
+        return jsonify({
+            "error": "No enviaste datos"
+        }), 400
+
+    email = data.get("email")
+    password = data.get("password")
+
+    if not email or not email.strip():
+        return jsonify({
+            "error": "El correo electrónico es obligatorio"
+        }), 400
+
+    if not password:
+        return jsonify({
+            "error": "La contraseña es obligatoria"
+        }), 400
+
+    clean_email = email.strip().lower()
+
+    user = db.session.scalar(
+        db.select(User).filter_by(email=clean_email)
+    )
+
+    if user is None:
+        return jsonify({
+            "error": "Correo o contraseña incorrectos"
+        }), 401
+
+    if not user.is_active:
+        return jsonify({
+            "error": "La cuenta está desactivada"
+        }), 403
+
+    if user.role != "client":
+        return jsonify({
+            "error": "Esta cuenta no corresponde a un cliente"
+        }), 403
+
+    if not check_password_hash(user.password, password):
+        return jsonify({
+            "error": "Correo o contraseña incorrectos"
+        }), 401
+
+    access_token = create_access_token(
+        identity=str(user.id),
+        additional_claims={
+            "role": user.role
+        }
+    )
+
+    return jsonify({
+        "message": "Inicio de sesión exitoso",
+        "token": access_token,
+        "user": user.serialize()
+    }), 200
+
+
+@api.route("/user/private", methods=["GET"])
+@jwt_required()
+def private_user():
+    user_id = get_jwt_identity()
+
+    user = db.session.get(User, int(user_id))
+
+    if user is None:
+        return jsonify({
+            "error": "Usuario no encontrado"
+        }), 404
+
+    return jsonify({
+        "message": "Token válido",
+        "user": user.serialize()
+    }), 200
 
 
 @api.route("/user/<int:user_id>", methods=["PUT"])
@@ -91,30 +227,80 @@ def update_user(user_id):
     data = request.get_json()
 
     if not data:
-        return jsonify({"error": "No enviaste datos"}), 400
+        return jsonify({
+            "error": "No enviaste datos"
+        }), 400
 
     user = db.session.get(User, user_id)
 
     if user is None:
-        return jsonify({"error": "Usuario no encontrado"}), 404
+        return jsonify({
+            "error": "Usuario no encontrado"
+        }), 404
 
     if "image" in data:
         user.image = data["image"]
 
-    if "username" in data:
-        user.username = data["username"]
+    if "name" in data:
+        new_name = data["name"]
+
+        if not new_name or not new_name.strip():
+            return jsonify({
+                "error": "El nombre no puede estar vacío"
+            }), 400
+
+        user.name = new_name.strip()
 
     if "email" in data:
-        user.email = data["email"]
+        new_email = data["email"]
+
+        if not new_email or not new_email.strip():
+            return jsonify({
+                "error": "El correo electrónico no puede estar vacío"
+            }), 400
+
+        clean_email = new_email.strip().lower()
+
+        existing_user = db.session.scalar(
+            db.select(User).where(
+                User.email == clean_email,
+                User.id != user_id
+            )
+        )
+
+        if existing_user:
+            return jsonify({
+                "error": "Ya existe otro usuario con ese correo electrónico"
+            }), 409
+
+        user.email = clean_email
 
     if "password" in data:
-        user.password = data["password"]
+        new_password = data["password"]
+
+        if not new_password:
+            return jsonify({
+                "error": "La contraseña no puede estar vacía"
+            }), 400
+
+        if len(new_password) < 6:
+            return jsonify({
+                "error": "La contraseña debe tener al menos 6 caracteres"
+            }), 400
+
+        user.password = generate_password_hash(new_password)
 
     try:
         db.session.commit()
-    except Exception as e:
+
+    except Exception as error:
         db.session.rollback()
-        return jsonify({"error": "Error al actualizar el usuario"}), 500
+
+        print("Error al actualizar usuario:", error)
+
+        return jsonify({
+            "error": "Error al actualizar el usuario"
+        }), 500
 
     return jsonify(user.serialize()), 200
 
@@ -124,24 +310,40 @@ def delete_user(user_id):
     user = db.session.get(User, user_id)
 
     if user is None:
-        return jsonify({"error": "Usuario no encontrado"}), 404
+        return jsonify({
+            "error": "Usuario no encontrado"
+        }), 404
 
     try:
         db.session.delete(user)
         db.session.commit()
-    except Exception as e:
+
+    except Exception as error:
         db.session.rollback()
-        return jsonify({"error": "Error al eliminar el usuario"}), 500
 
-    return jsonify({"message": "Usuario eliminado correctamente"}), 200
+        print("Error al eliminar usuario:", error)
 
+        return jsonify({
+            "error": "Error al eliminar el usuario"
+        }), 500
+
+    return jsonify({
+        "message": "Usuario eliminado correctamente"
+    }), 200
+
+
+# =========================================================
+# CARRITO
+# =========================================================
 
 @api.route("/user/cart/<int:user_id>", methods=["GET"])
 def get_user_cart(user_id):
     user = db.session.get(User, user_id)
 
     if user is None:
-        return jsonify({"error": "Usuario no encontrado"}), 404
+        return jsonify({
+            "error": "Usuario no encontrado"
+        }), 404
 
     cart = user.cart
 
@@ -160,75 +362,156 @@ def add_product_to_cart():
     data = request.get_json()
 
     if not data:
-        return jsonify({"error": "Datos no enviados"}), 400
+        return jsonify({
+            "error": "Datos no enviados"
+        }), 400
 
     user_id = data.get("userId")
     product_id = data.get("productId")
 
     if not user_id or not product_id:
-        return jsonify({"error": "Falta userId o productId"}), 400
+        return jsonify({
+            "error": "Falta userId o productId"
+        }), 400
 
-    cart = db.session.scalar(db.select(Cart).filter_by(user_id=user_id))
+    user = db.session.get(User, user_id)
 
-    if not cart:
+    if user is None:
+        return jsonify({
+            "error": "Usuario no encontrado"
+        }), 404
+
+    product = db.session.get(Product, product_id)
+
+    if product is None:
+        return jsonify({
+            "error": "Producto no encontrado"
+        }), 404
+
+    cart = db.session.scalar(
+        db.select(Cart).filter_by(user_id=user_id)
+    )
+
+    if cart is None:
         cart = Cart(user_id=user_id)
+
         db.session.add(cart)
         db.session.flush()
 
-    cart_items = db.session.scalar(db.select(Cart_Items).filter_by(
-        cart_id=cart.id, product_id=product_id))
+    cart_item = db.session.scalar(
+        db.select(Cart_Items).filter_by(
+            cart_id=cart.id,
+            product_id=product_id
+        )
+    )
 
-    if cart_items:
-        cart_items.quantity += 1
+    if cart_item:
+        cart_item.quantity += 1
+
     else:
-        cart_items = Cart_Items(
-            cart_id=cart.id, product_id=product_id, quantity=1)
-        db.session.add(cart_items)
+        cart_item = Cart_Items(
+            cart_id=cart.id,
+            product_id=product_id,
+            quantity=1
+        )
+
+        db.session.add(cart_item)
 
     try:
         db.session.commit()
-        return jsonify({"message": "Producto agregado al carrito correctamente",
-                        "cart": cart.serialize()}), 200
-    except Exception as e:
+
+        return jsonify({
+            "message": "Producto agregado al carrito correctamente",
+            "cart": cart.serialize()
+        }), 200
+
+    except Exception as error:
         db.session.rollback()
-        return jsonify({"error": "Error al agregar el producto al carrito"}), 500
+
+        print("Error al agregar producto al carrito:", error)
+
+        return jsonify({
+            "error": "Error al agregar el producto al carrito"
+        }), 500
 
 
 @api.route("/cart/update-quantity", methods=["PUT"])
 def update_cart_item_quantity():
     data = request.get_json()
 
-    if not data or "cartItemId" not in data or "quantity" not in data:
-        return jsonify({"error": "Datos no enviados o incompletos"}), 400
+    if (
+        not data
+        or "userId" not in data
+        or "productId" not in data
+        or "quantity" not in data
+    ):
+        return jsonify({
+            "error": "Datos no enviados o incompletos"
+        }), 400
 
     user_id = data.get("userId")
     product_id = data.get("productId")
     quantity = data.get("quantity")
 
+    try:
+        quantity = int(quantity)
+
+    except (TypeError, ValueError):
+        return jsonify({
+            "error": "La cantidad debe ser un número entero"
+        }), 400
+
     if quantity < 1:
-        return jsonify({"error": "La cantidad debe ser al menos 1"}), 400
+        return jsonify({
+            "error": "La cantidad debe ser al menos 1"
+        }), 400
 
-    cart = db.session.scalar(db.select(Cart).filter_by(user_id=user_id))
-    if not cart:
-        return jsonify({"error": "Carrito no encontrado para el usuario"}), 404
+    user = db.session.get(User, user_id)
 
-    cart_item = db.session.scalar(db.select(Cart_Items).filter_by(
-        cart_id=cart.id, product_id=product_id))
+    if user is None:
+        return jsonify({
+            "error": "Usuario no encontrado"
+        }), 404
 
-    cart_item = db.session.scalar(db.select(Cart_Items).filter_by(
-        cart_id=cart.id, product_id=product_id))
-    if not cart_item:
-        return jsonify({"error": "Producto no encontrado en el carrito"}), 404
+    cart = db.session.scalar(
+        db.select(Cart).filter_by(user_id=user_id)
+    )
+
+    if cart is None:
+        return jsonify({
+            "error": "Carrito no encontrado para el usuario"
+        }), 404
+
+    cart_item = db.session.scalar(
+        db.select(Cart_Items).filter_by(
+            cart_id=cart.id,
+            product_id=product_id
+        )
+    )
+
+    if cart_item is None:
+        return jsonify({
+            "error": "Producto no encontrado en el carrito"
+        }), 404
 
     cart_item.quantity = quantity
 
     try:
         db.session.commit()
-        return jsonify({"message": "Cantidad del producto en el carrito actualizada correctamente",
-                        "cart": cart.serialize()}), 200
-    except Exception as e:
+
+        return jsonify({
+            "message": "Cantidad actualizada correctamente",
+            "cart": cart.serialize()
+        }), 200
+
+    except Exception as error:
         db.session.rollback()
-        return jsonify({"error": "Error al actualizar la cantidad del producto en el carrito"}), 500
+
+        print("Error al actualizar cantidad:", error)
+
+        return jsonify({
+            "error": "Error al actualizar la cantidad del producto"
+        }), 500
 
 
 @api.route("/cart/clear", methods=["DELETE"])
@@ -236,31 +519,57 @@ def clear_cart():
     data = request.get_json()
 
     if not data or "userId" not in data:
-        return jsonify({"error": "Datos no enviados o incompletos"}), 400
+        return jsonify({
+            "error": "Datos no enviados o incompletos"
+        }), 400
 
     user_id = data.get("userId")
 
-    cart = db.session.scalar(db.select(Cart).filter_by(user_id=user_id))
-    if not cart:
-        return jsonify({"error": "Carrito no encontrado para el usuario"}), 404
+    cart = db.session.scalar(
+        db.select(Cart).filter_by(user_id=user_id)
+    )
 
-    db.session.execute(db.delete(Cart_Items).where(
-        Cart_Items.cart_id == cart.id))
-    db.session.execute(db.delete(Cart_Items).where(
-        Cart_Items.cart_id == cart.id))
-    db.session.commit()
+    if cart is None:
+        return jsonify({
+            "error": "Carrito no encontrado para el usuario"
+        }), 404
 
-    return jsonify({"message": "Carrito vaciado correctamente"}), 200
+    try:
+        db.session.execute(
+            db.delete(Cart_Items).where(
+                Cart_Items.cart_id == cart.id
+            )
+        )
 
+        db.session.commit()
+
+        return jsonify({
+            "message": "Carrito vaciado correctamente"
+        }), 200
+
+    except Exception as error:
+        db.session.rollback()
+
+        print("Error al vaciar carrito:", error)
+
+        return jsonify({
+            "error": "Error al vaciar el carrito"
+        }), 500
+
+
+# =========================================================
+# TIENDA
+# =========================================================
 
 @api.route("/store", methods=["GET"])
 def get_store():
-
-    store = db.session.scalar(db.select(Store))
+    store = db.session.scalar(
+        db.select(Store)
+    )
 
     if store is None:
         return jsonify({
-            "message": "No existe ninguna tienda todavia."
+            "message": "No existe ninguna tienda todavía."
         }), 404
 
     return jsonify(store.serialize()), 200
@@ -271,22 +580,30 @@ def create_store():
     data = request.get_json()
 
     if not data:
-        return jsonify({"error": "No enviaste datos"}), 400
+        return jsonify({
+            "error": "No enviaste datos"
+        }), 400
 
     name = data.get("name")
     logo = data.get("logo")
     description = data.get("description")
 
-    if not name:
-        return jsonify({"error": "El nombre de la tienda es obligatorio"}), 400
+    if not name or not name.strip():
+        return jsonify({
+            "error": "El nombre de la tienda es obligatorio"
+        }), 400
 
-    existing_store = db.session.scalar(db.select(Store))
+    existing_store = db.session.scalar(
+        db.select(Store)
+    )
 
     if existing_store:
-        return jsonify({"error": "Ya existe una tienda"}), 400
+        return jsonify({
+            "error": "Ya existe una tienda"
+        }), 400
 
     new_store = Store(
-        name=name,
+        name=name.strip(),
         logo=logo,
         description=description
     )
@@ -294,9 +611,15 @@ def create_store():
     try:
         db.session.add(new_store)
         db.session.commit()
-    except Exception as e:
+
+    except Exception as error:
         db.session.rollback()
-        return jsonify({"error": "Error al crear la tienda"}), 500
+
+        print("Error al crear tienda:", error)
+
+        return jsonify({
+            "error": "Error al crear la tienda"
+        }), 500
 
     return jsonify(new_store.serialize()), 201
 
@@ -306,15 +629,28 @@ def update_store():
     data = request.get_json()
 
     if not data:
-        return jsonify({"error": "No enviaste datos"}), 400
+        return jsonify({
+            "error": "No enviaste datos"
+        }), 400
 
-    store = db.session.scalar(db.select(Store))
+    store = db.session.scalar(
+        db.select(Store)
+    )
 
     if store is None:
-        return jsonify({"error": "No existe ninguna tienda todavía"}), 404
+        return jsonify({
+            "error": "No existe ninguna tienda todavía"
+        }), 404
 
     if "name" in data:
-        store.name = data["name"]
+        name = data["name"]
+
+        if not name or not name.strip():
+            return jsonify({
+                "error": "El nombre de la tienda no puede estar vacío"
+            }), 400
+
+        store.name = name.strip()
 
     if "logo" in data:
         store.logo = data["logo"]
@@ -324,18 +660,32 @@ def update_store():
 
     try:
         db.session.commit()
-    except Exception as e:
+
+    except Exception as error:
         db.session.rollback()
-        return jsonify({"error": "Error al actualizar la tienda"}), 500
+
+        print("Error al actualizar tienda:", error)
+
+        return jsonify({
+            "error": "Error al actualizar la tienda"
+        }), 500
 
     return jsonify(store.serialize()), 200
 
 
+# =========================================================
+# CATEGORÍAS
+# =========================================================
+
 @api.route("/categories", methods=["GET"])
 def get_categories():
-    categories = db.session.scalars(db.select(Category)).all()
+    categories = db.session.scalars(
+        db.select(Category)
+    ).all()
 
-    return jsonify([category.serialize() for category in categories]), 200
+    return jsonify(
+        [category.serialize() for category in categories]
+    ), 200
 
 
 @api.route("/categories", methods=["POST"])
@@ -343,21 +693,46 @@ def create_category():
     data = request.get_json()
 
     if not data:
-        return jsonify({"error": "No enviaste datos"}), 400
+        return jsonify({
+            "error": "No enviaste datos"
+        }), 400
 
     name = data.get("name")
 
-    if not name:
-        return jsonify({"error": "El nombre de la categoría es obligatorio"}), 400
+    if not name or not name.strip():
+        return jsonify({
+            "error": "El nombre de la categoría es obligatorio"
+        }), 400
 
-    new_category = Category(name=name)
+    clean_name = name.strip().lower()
+
+    existing_category = db.session.scalar(
+        db.select(Category).where(
+            db.func.lower(Category.name) == clean_name
+        )
+    )
+
+    if existing_category:
+        return jsonify({
+            "error": "Esa categoría ya existe"
+        }), 409
+
+    new_category = Category(
+        name=clean_name
+    )
 
     try:
         db.session.add(new_category)
         db.session.commit()
-    except Exception as e:
+
+    except Exception as error:
         db.session.rollback()
-        return jsonify({"error": "Error al crear la categoría"}), 500
+
+        print("Error al crear categoría:", error)
+
+        return jsonify({
+            "error": "Error al crear la categoría"
+        }), 500
 
     return jsonify(new_category.serialize()), 201
 
@@ -367,24 +742,43 @@ def delete_category(category_id):
     category = db.session.get(Category, category_id)
 
     if category is None:
-        return jsonify({"error": "Categoría no encontrada"}), 404
+        return jsonify({
+            "error": "Categoría no encontrada"
+        }), 404
 
     try:
         db.session.delete(category)
         db.session.commit()
-    except Exception as e:
+
+    except Exception as error:
         db.session.rollback()
-        return jsonify({"error": "Error al eliminar la categoría"}), 500
 
-    return jsonify({"message": "Categoría eliminada correctamente"}), 200
+        print("Error al eliminar categoría:", error)
+
+        return jsonify({
+            "error": "Error al eliminar la categoría"
+        }), 500
+
+    return jsonify({
+        "message": "Categoría eliminada correctamente"
+    }), 200
 
 
-@api.route("/products/category/<int:category_id>", methods=["GET"])
+# =========================================================
+# PRODUCTOS
+# =========================================================
+
+@api.route(
+    "/products/category/<int:category_id>",
+    methods=["GET"]
+)
 def get_products_by_category(category_id):
     category = db.session.get(Category, category_id)
 
     if category is None:
-        return jsonify({"error": "Categoría no encontrada"}), 404
+        return jsonify({
+            "error": "Categoría no encontrada"
+        }), 404
 
     statement = db.select(Product).filter_by(
         category_id=category_id
@@ -404,7 +798,9 @@ def create_product():
     data = request.get_json()
 
     if not data:
-        return jsonify({"error": "No enviaste datos"}), 400
+        return jsonify({
+            "error": "No enviaste datos"
+        }), 400
 
     name = data.get("name")
     price = data.get("price")
@@ -412,22 +808,43 @@ def create_product():
     image = data.get("image")
     category_id = data.get("category_id")
 
-    if not name:
-        return jsonify({"error": "El nombre del producto es obligatorio"}), 400
+    if not name or not name.strip():
+        return jsonify({
+            "error": "El nombre del producto es obligatorio"
+        }), 400
 
     if price is None:
-        return jsonify({"error": "El precio del producto es obligatorio"}), 400
+        return jsonify({
+            "error": "El precio del producto es obligatorio"
+        }), 400
+
+    try:
+        price = float(price)
+
+    except (TypeError, ValueError):
+        return jsonify({
+            "error": "El precio debe ser un número válido"
+        }), 400
+
+    if price < 0:
+        return jsonify({
+            "error": "El precio no puede ser negativo"
+        }), 400
 
     if not category_id:
-        return jsonify({"error": "La categoría es obligatoria"}), 400
+        return jsonify({
+            "error": "La categoría es obligatoria"
+        }), 400
 
     category = db.session.get(Category, category_id)
 
     if category is None:
-        return jsonify({"error": "Categoría no encontrada"}), 404
+        return jsonify({
+            "error": "Categoría no encontrada"
+        }), 404
 
     new_product = Product(
-        name=name,
+        name=name.strip(),
         price=price,
         description=description,
         image=image,
@@ -437,9 +854,15 @@ def create_product():
     try:
         db.session.add(new_product)
         db.session.commit()
-    except Exception as e:
+
+    except Exception as error:
         db.session.rollback()
-        return jsonify({"error": "Error al crear Producto"}), 500
+
+        print("Error al crear producto:", error)
+
+        return jsonify({
+            "error": "Error al crear el producto"
+        }), 500
 
     return jsonify(new_product.serialize()), 201
 
@@ -449,18 +872,42 @@ def update_product(product_id):
     data = request.get_json()
 
     if not data:
-        return jsonify({"error": "No enviaste datos"}), 400
+        return jsonify({
+            "error": "No enviaste datos"
+        }), 400
 
     product = db.session.get(Product, product_id)
 
     if product is None:
-        return jsonify({"error": "Producto no encontrado"}), 404
+        return jsonify({
+            "error": "Producto no encontrado"
+        }), 404
 
     if "name" in data:
-        product.name = data["name"]
+        name = data["name"]
+
+        if not name or not name.strip():
+            return jsonify({
+                "error": "El nombre del producto no puede estar vacío"
+            }), 400
+
+        product.name = name.strip()
 
     if "price" in data:
-        product.price = data["price"]
+        try:
+            new_price = float(data["price"])
+
+        except (TypeError, ValueError):
+            return jsonify({
+                "error": "El precio debe ser un número válido"
+            }), 400
+
+        if new_price < 0:
+            return jsonify({
+                "error": "El precio no puede ser negativo"
+            }), 400
+
+        product.price = new_price
 
     if "description" in data:
         product.description = data["description"]
@@ -469,18 +916,29 @@ def update_product(product_id):
         product.image = data["image"]
 
     if "category_id" in data:
-        category = db.session.get(Category, data["category_id"])
+        category = db.session.get(
+            Category,
+            data["category_id"]
+        )
 
         if category is None:
-            return jsonify({"error": "Categoría no encontrada"}), 404
+            return jsonify({
+                "error": "Categoría no encontrada"
+            }), 404
 
         product.category_id = data["category_id"]
 
     try:
         db.session.commit()
-    except Exception as e:
+
+    except Exception as error:
         db.session.rollback()
-        return jsonify({"error": "Error al actualizar el producto"}), 500
+
+        print("Error al actualizar producto:", error)
+
+        return jsonify({
+            "error": "Error al actualizar el producto"
+        }), 500
 
     return jsonify(product.serialize()), 200
 
@@ -490,39 +948,76 @@ def delete_product(product_id):
     product = db.session.get(Product, product_id)
 
     if product is None:
-        return jsonify({"error": "Producto no encontrado"}), 404
+        return jsonify({
+            "error": "Producto no encontrado"
+        }), 404
 
     try:
         db.session.delete(product)
         db.session.commit()
-    except Exception as e:
+
+    except Exception as error:
         db.session.rollback()
-        return jsonify({"error": "Error al eliminar el producto"}), 500
 
-    return jsonify({"message": "Producto eliminado correctamente"}), 200
+        print("Error al eliminar producto:", error)
+
+        return jsonify({
+            "error": "Error al eliminar el producto"
+        }), 500
+
+    return jsonify({
+        "message": "Producto eliminado correctamente"
+    }), 200
 
 
-@api.route("/favorites/user/<int:user_id>", methods=["GET"])
+# =========================================================
+# FAVORITOS
+# =========================================================
+
+@api.route(
+    "/favorites/user/<int:user_id>",
+    methods=["GET"]
+)
+@jwt_required()
 def get_user_favorites(user_id):
-    user = User.query.get(user_id)
+
+    current_user = int(get_jwt_identity())
+
+    if current_user != user_id:
+        return jsonify({
+            "error": "No autorizado"
+        }), 403
+
+    user = db.session.get(User, user_id)
 
     if user is None:
-        return jsonify({"error": "Usuario no encontrado"}), 404
+        return jsonify({
+            "error": "Usuario no encontrado"
+        }), 404
 
-    favorites = Favorite.query.filter_by(user_id=user_id).all()
+    statement = db.select(Favorite).filter_by(
+        user_id=user_id
+    )
+
+    result = db.session.execute(statement)
+
+    favorites = result.unique().scalars().all()
 
     return jsonify(
         [favorite.serialize() for favorite in favorites]
     ), 200
 
-
 @api.route("/favorites", methods=["POST"])
+@jwt_required()
 def add_favorite():
     data = request.get_json()
 
     if not data:
-        return jsonify({"error": "No enviaste datos"}), 400
+        return jsonify({
+            "error": "No enviaste datos"
+        }), 400
 
+    current_user_id = int(get_jwt_identity())
     user_id = data.get("user_id")
     product_id = data.get("product_id")
 
@@ -531,20 +1026,31 @@ def add_favorite():
             "error": "user_id y product_id son obligatorios"
         }), 400
 
-    user = User.query.get(user_id)
+    if current_user_id != int(user_id):
+        return jsonify({
+            "error": "No autorizado"
+        }), 403
+
+    user = db.session.get(User, user_id)
 
     if user is None:
-        return jsonify({"error": "Usuario no encontrado"}), 404
+        return jsonify({
+            "error": "Usuario no encontrado"
+        }), 404
 
-    product = Product.query.get(product_id)
+    product = db.session.get(Product, product_id)
 
     if product is None:
-        return jsonify({"error": "Producto no encontrado"}), 404
+        return jsonify({
+            "error": "Producto no encontrado"
+        }), 404
 
-    existing_favorite = Favorite.query.filter_by(
-        user_id=user_id,
-        product_id=product_id
-    ).first()
+    existing_favorite = db.session.scalar(
+        db.select(Favorite).filter_by(
+            user_id=user_id,
+            product_id=product_id
+        )
+    )
 
     if existing_favorite:
         return jsonify({
@@ -570,16 +1076,25 @@ def add_favorite():
 
     return jsonify(new_favorite.serialize()), 201
 
-
 @api.route(
     "/favorites/user/<int:user_id>/product/<int:product_id>",
     methods=["DELETE"]
 )
+@jwt_required()
 def delete_favorite(user_id, product_id):
-    favorite = Favorite.query.filter_by(
-        user_id=user_id,
-        product_id=product_id
-    ).first()
+    current_user_id = int(get_jwt_identity())
+
+    if current_user_id != user_id:
+        return jsonify({
+            "error": "No autorizado"
+        }), 403
+
+    favorite = db.session.scalar(
+        db.select(Favorite).filter_by(
+            user_id=user_id,
+            product_id=product_id
+        )
+    )
 
     if favorite is None:
         return jsonify({

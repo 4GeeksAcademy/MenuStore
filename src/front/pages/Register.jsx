@@ -1,105 +1,140 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
-import { fetchRegister } from "../fetch";
-
+import { fetchRegister } from "../fetch.js";
 
 const Register = () => {
-    const navigate = useNavigate();
-    
-    const [inputData, setInputData] = useState({
-        username: "",
-        email: "",
-        password: ""
-    });
+  const navigate = useNavigate();
 
+  const [inputData, setInputData] = useState({
+    name: "",
+    email: "",
+    password: ""
+  });
 
-    const handleInputChange = (e) => {
-        const { name, value } = e.target;
-        setInputData((prevData) => ({
-            ...prevData,
-            [name]: value,
-        }));
-    };
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
 
-    const handleRegister = async (e) => {
-        e.preventDefault();
+    setInputData((prevData) => ({
+      ...prevData,
+      [name]: value
+    }));
+  };
 
-        if (
-            inputData.username === "" ||
-            inputData.email === "" ||
-            inputData.password === ""
-        ) {
-            alert("Por favor completa todos los campos");
-            return;
-        }
+  const handleRegister = async (e) => {
+    e.preventDefault();
 
-        try{
+    if (
+      !inputData.name.trim() ||
+      !inputData.email.trim() ||
+      !inputData.password.trim()
+    ) {
+      alert("Por favor completa todos los campos");
+      return;
+    }
 
-            await fetchRegister(inputData);
-            alert("Usuario registrado correctamente");
-            navigate("/login");
+    if (inputData.password.length < 6) {
+      alert("La contraseña debe tener al menos 6 caracteres");
+      return;
+    }
 
-        } catch (error) {
-            console.error('Error al registrar usuario:', error);
-        }
-    };
+    try {
+      await fetchRegister({
+        name: inputData.name.trim(),
+        email: inputData.email.trim().toLowerCase(),
+        password: inputData.password
+      });
 
-    return (
-        <div className="bg-light d-flex justify-content-center align-items-center vh-100">
-            <div className="card shadow p-4" style={{ width: "360px" }}>
-                <h3 className="text-center mb-4">Registro de Usuario</h3>
+      alert("Usuario registrado correctamente");
+      navigate("/login");
+    } catch (error) {
+      console.error("Error al registrar usuario:", error);
 
-                <form onSubmit={handleRegister}>
-                    <div className="mb-3">
-                        <label className="form-label">Nombre de Usuario</label>
-                        <input
-                            type="text"
-                            className="form-control"
-                            placeholder="Ingresa tu usuario"
-                            value={inputData.username}
-                            onChange={handleInputChange}
-                            name="username"
-                        />
-                    </div>
+      alert(
+        error.message ||
+          "No se pudo registrar el usuario"
+      );
+    }
+  };
 
-                    <div className="mb-3">
-                        <label className="form-label">Correo Electrónico</label>
-                        <input
-                            type="email"
-                            className="form-control"
-                            placeholder="Ingresa tu correo"
-                            value={inputData.email}
-                            onChange={handleInputChange}
-                            name="email"
-                        />
-                    </div>
+  return (
+    <div className="bg-light d-flex justify-content-center align-items-center vh-100">
+      <div
+        className="card shadow p-4"
+        style={{ width: "360px" }}
+      >
+        <h3 className="text-center mb-4">
+          Registro de Usuario
+        </h3>
 
-                    <div className="mb-4">
-                        <label className="form-label">Contraseña</label>
-                        <input
-                            type="password"
-                            className="form-control"
-                            placeholder="Crea una contraseña"
-                            value={inputData.password}
-                            onChange={handleInputChange}
-                            name="password"
-                        />
-                    </div>
+        <form onSubmit={handleRegister}>
+          <div className="mb-3">
+            <label className="form-label">
+              Nombre
+            </label>
 
-                    <button type="submit" className="btn btn-primary w-100">
-                        Registrarse
-                    </button>
+            <input
+              type="text"
+              className="form-control"
+              placeholder="Ingresa tu nombre"
+              value={inputData.name}
+              onChange={handleInputChange}
+              name="name"
+            />
+          </div>
 
-                    <div className="text-center mt-4">
-                        <span className="text-muted">¿Ya estás registrado? </span>
-                        <Link to="/login" className="text-decoration-none fw-semibold">
-                            Inicia sesión aquí
-                        </Link>
-                    </div>
-                </form>
-            </div>
-        </div>
-    );
+          <div className="mb-3">
+            <label className="form-label">
+              Correo Electrónico
+            </label>
+
+            <input
+              type="email"
+              className="form-control"
+              placeholder="Ingresa tu correo"
+              value={inputData.email}
+              onChange={handleInputChange}
+              name="email"
+            />
+          </div>
+
+          <div className="mb-4">
+            <label className="form-label">
+              Contraseña
+            </label>
+
+            <input
+              type="password"
+              className="form-control"
+              placeholder="Crea una contraseña"
+              value={inputData.password}
+              onChange={handleInputChange}
+              name="password"
+            />
+          </div>
+
+          <button
+            type="submit"
+            className="btn btn-primary w-100"
+          >
+            Registrarse
+          </button>
+
+          <div className="text-center mt-4">
+            <span className="text-muted">
+              ¿Ya estás registrado?{" "}
+            </span>
+
+            <Link
+              to="/login"
+              className="text-decoration-none fw-semibold"
+            >
+              Inicia sesión aquí
+            </Link>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
 };
 
 export default Register;
