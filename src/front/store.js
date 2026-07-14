@@ -11,7 +11,7 @@ export const initialStore = () => ({
 })
 
 export default function storeReducer(store, action = {}) {
-  const {type, payload}
+  const {type, payload} = action
   switch(type){
     case 'USER_IMAGE':
       return {
