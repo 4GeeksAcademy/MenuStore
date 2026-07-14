@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 
+import useGlobalReducer from "../hooks/useGlobalReducer.jsx";
+
 const UserView = () => {
 
     const [selectedFile, setSelectedFile] = useState(null);
@@ -9,10 +11,40 @@ const UserView = () => {
         email: "",
 
     });
+    const { store, dispatch } = useGlobalReducer();
 
     const handleFileChange = (e) => {
         setSelectedFile(e.target.files[0]);
     };
+
+    const uploadImage = async () => {
+
+        const formData = new FormData();
+        formData.append('file', selectedFile);
+        formData.append("upload_preset", "MenuStore")
+
+        try {
+            const response = await fetch("https://api.cloudinary.com/v1_1/dk0xwtjyr/image/upload", {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!response.ok) {
+                throw new Error('Error al subir la imagen');
+            }
+
+            const data = await response.json();
+            console.log('Imagen subida exitosamente:', data);
+            dispatch({ type: 'USER_IMAGE', payload: data.secure_url });
+
+        } catch (error) {
+            console.error('Error al subir la imagen:', error);
+            throw error;
+        }
+
+        alert('Imagen subida correctamente');
+
+    }
 
     return (
         <div className="container">
@@ -24,6 +56,11 @@ const UserView = () => {
                 <div className="card-body">
                     <div className="row border-bottom py-4 mb-4 justify-content-between align-items-center">
                         <div className="col-auto">
+
+                            {store.user.image && (
+                                <img src={store.user.image} alt="User Avatar" className="img-thumbnail" />
+                            )}
+
                             <div className="input-group">
                                 {!selectedFile && <>
                                     <input
@@ -46,7 +83,10 @@ const UserView = () => {
                                             style={{ width: '100px', height: '100px' }}
                                         />
                                         <span>{selectedFile.name}</span>
-                                        <button className="btn btn-danger ms-3" onClick={() => setSelectedFile(null)}>
+                                        <button
+                                            className="btn btn-danger ms-3"
+                                            onClick={() => setSelectedFile(null)}
+                                        >
                                             Remove
                                         </button>
                                     </div>
@@ -54,7 +94,20 @@ const UserView = () => {
                             </div>
                         </div>
                         <div className="col-auto">
-                            <button type="button" className="btn btn-secondary">Edit Avatar</button>
+                            <button
+                                type="button"
+                                className="btn btn-secondary"
+                                onClick={() => {
+                                    if (selectedFile) {
+                                        alert('Subiendo imagen:', selectedFile);
+                                        uploadImage()
+                                    } else {
+                                        alert('No se ha seleccionado ninguna imagen.');
+                                    }
+                                }}
+                            >
+                                Edit Avatar
+                            </button>
                         </div>
                     </div>
 
