@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import MiniUser from "./MiniUser"; // ver si funciona el dropdwon en el navbar
 
 import {
   fetchStore,
@@ -85,14 +86,14 @@ export const CustomerHome = () => {
       setShopLogo(data.logo || "");
       setShopDescription(
         data.description ||
-          "Explora nuestros productos y servicios disponibles."
+        "Explora nuestros productos y servicios disponibles."
       );
     } catch (error) {
       console.error("Error al cargar la tienda:", error);
 
       setError(
         error.message ||
-          "No se pudo cargar la información de la tienda."
+        "No se pudo cargar la información de la tienda."
       );
     } finally {
       setLoadingStore(false);
@@ -128,7 +129,7 @@ export const CustomerHome = () => {
 
       setError(
         error.message ||
-          "No se pudieron cargar las categorías."
+        "No se pudieron cargar las categorías."
       );
     }
   };
@@ -154,7 +155,7 @@ export const CustomerHome = () => {
 
       setError(
         error.message ||
-          "No se pudieron cargar los productos."
+        "No se pudieron cargar los productos."
       );
     } finally {
       setLoadingProducts(false);
@@ -216,7 +217,7 @@ export const CustomerHome = () => {
 
       alert(
         error.message ||
-          "No se pudo modificar el favorito"
+        "No se pudo modificar el favorito"
       );
     }
   };
@@ -241,7 +242,7 @@ export const CustomerHome = () => {
 
       alert(
         error.message ||
-          "No se pudo agregar el producto al carrito"
+        "No se pudo agregar el producto al carrito"
       );
     }
   };
@@ -255,14 +256,18 @@ export const CustomerHome = () => {
 
   return (
     <div className="bg-light min-vh-100">
-      <nav className="navbar navbar-dark bg-dark shadow-sm px-4 justify-content-end">
-        <Link
-          to="/login"
-          className="btn btn-light"
-          onClick={handleLogout}
-        >
-          Cerrar sesión
-        </Link>
+      <nav className="navbar navbar-dark bg-dark shadow-sm px-4 py-2">
+        <div className="ms-auto d-flex align-items-center gap-2">
+          <MiniUser />
+
+          <Link
+            to="/login"
+            className="btn btn-outline-light"
+            onClick={handleLogout}
+          >
+            Cerrar sesión
+          </Link>
+        </div>
       </nav>
 
       <div className="container bg-white shadow rounded my-4 p-0">

@@ -53,7 +53,15 @@ def get_users():
 
 
 @api.route("/user/<int:user_id>", methods=["GET"])
+@jwt_required()
 def get_user(user_id):
+    current_user_id = int(get_jwt_identity())
+
+    if current_user_id != user_id:
+        return jsonify({
+            "error": "No autorizado"
+        }), 403
+
     user = db.session.get(User, user_id)
 
     if user is None:
@@ -1007,6 +1015,7 @@ def get_user_favorites(user_id):
         [favorite.serialize() for favorite in favorites]
     ), 200
 
+
 @api.route("/favorites", methods=["POST"])
 @jwt_required()
 def add_favorite():
@@ -1075,6 +1084,7 @@ def add_favorite():
         }), 500
 
     return jsonify(new_favorite.serialize()), 201
+
 
 @api.route(
     "/favorites/user/<int:user_id>/product/<int:product_id>",

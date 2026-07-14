@@ -5,7 +5,8 @@ import {
   fetchProductsByCategory,
   fetchCreateProduct,
   fetchUpdateProduct,
-  fetchDeleteProduct
+  fetchDeleteProduct,
+  fetchUploadImage
 } from "../fetch.js";
 
 export const ProductManager = () => {
@@ -20,6 +21,8 @@ export const ProductManager = () => {
 
   const [editingId, setEditingId] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   useEffect(() => {
     getProducts();
@@ -47,6 +50,30 @@ export const ProductManager = () => {
     setProductPrice("");
     setProductDetails("");
     setEditingId(null);
+  };
+
+  const uploadProductImage = async (event) => {
+    const file = event.target.files?.[0];
+
+    if (!file) return;
+
+    try {
+      setUploadingImage(true);
+
+      const imageUrl = await fetchUploadImage(file);
+
+      setProductImage(imageUrl);
+    } catch (error) {
+      console.error("Error al subir imagen:", error);
+
+      alert(
+        error.message ||
+        "No se pudo subir la imagen"
+      );
+    } finally {
+      setUploadingImage(false);
+      event.target.value = "";
+    }
   };
 
   const saveProduct = async () => {
@@ -190,16 +217,28 @@ export const ProductManager = () => {
 
             <div className="mb-3">
               <label className="form-label">
-                URL de imagen
+                Imagen del producto
               </label>
 
               <input
-                type="text"
+                type="file"
+                accept="image/*"
                 className="form-control"
-                placeholder="URL de la imagen"
-                value={productImage}
-                onChange={(e) => setProductImage(e.target.value)}
+                onChange={uploadProductImage}
+                disabled={uploadingImage}
               />
+
+              {uploadingImage && (
+                <small className="text-muted d-block mt-2">
+                  Subiendo imagen...
+                </small>
+              )}
+
+              {productImage && !uploadingImage && (
+                <small className="text-success d-block mt-2">
+                  Imagen cargada correctamente
+                </small>
+              )}
             </div>
 
             <div className="mb-3">
@@ -259,8 +298,13 @@ export const ProductManager = () => {
                 type="button"
                 className="btn btn-primary rounded-pill px-4"
                 onClick={saveProduct}
+                disabled={uploadingIpipmage}
               >
-                {editingId ? "Actualizar" : "Guardar"}
+                {uploadingImage
+                  ? "Subiendo..."
+                  : editingId
+                    ? "Actualizar"
+                    : "Guardar"}
               </button>
             </div>
           </div>

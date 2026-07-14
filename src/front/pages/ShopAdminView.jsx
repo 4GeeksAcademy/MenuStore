@@ -6,7 +6,8 @@ import {
   fetchUpdateStore,
   fetchCategories,
   fetchCreateCategory,
-  fetchDeleteCategory
+  fetchDeleteCategory,
+  fetchUploadImage
 } from "../fetch.js";
 
 const ShopAdminView = () => {
@@ -16,6 +17,8 @@ const ShopAdminView = () => {
   const [categoryName, setCategoryName] = useState("");
   const [categories, setCategories] = useState([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState("");
+  const [shopLogo, setShopLogo] = useState("");
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   useEffect(() => {
     getStore();
@@ -27,6 +30,7 @@ const ShopAdminView = () => {
       const data = await fetchStore();
 
       setShopName(data.name || "");
+      setShopLogo(data.logo || "");
     } catch (error) {
       console.error("Error al cargar la tienda:", error);
       alert(error.message || "No se pudo cargar la tienda");
@@ -47,6 +51,36 @@ const ShopAdminView = () => {
     } catch (error) {
       console.error("Error al cargar las categorías:", error);
       alert(error.message || "No se pudieron cargar las categorías");
+    }
+  };
+
+  const uploadShopLogo = async (event) => {
+    const file = event.target.files?.[0];
+
+    if (!file) return;
+
+    try {
+      setUploadingImage(true);
+
+      const imageUrl = await fetchUploadImage(file);
+
+      const updatedStore = await fetchUpdateStore({
+        logo: imageUrl
+      });
+
+      setShopLogo(updatedStore.logo || imageUrl);
+
+      alert("Logo actualizado correctamente");
+    } catch (error) {
+      console.error("Error al subir el logo:", error);
+
+      alert(
+        error.message ||
+        "No se pudo subir el logo"
+      );
+    } finally {
+      setUploadingImage(false);
+      event.target.value = "";
     }
   };
 
@@ -146,7 +180,10 @@ const ShopAdminView = () => {
       <div className="container bg-white shadow rounded my-4 p-0">
         <div className="text-center py-5 px-3">
           <img
-            src="https://placehold.co/200x150?text=Store"
+            src={
+              shopLogo ||
+              "https://placehold.co/200x150?text=Store"
+            }
             className="img-fluid rounded-4 shadow-sm mb-3"
             alt="Store storefront"
             style={{
@@ -182,12 +219,21 @@ const ShopAdminView = () => {
             </div>
 
             <div className="col-md-4 text-md-end mt-3 mt-md-0">
-              <button
-                type="button"
-                className="btn btn-primary rounded-pill px-4"
+              <input
+                type="file"
+                accept="image/*"
+                id="shop-logo-input"
+                className="d-none"
+                onChange={uploadShopLogo}
+              />
+
+              <label
+                htmlFor="shop-logo-input"
+                className={`btn btn-primary rounded-pill px-4 ${uploadingImage ? "disabled" : ""
+                  }`}
               >
-                Edit Image
-              </button>
+                {uploadingImage ? "Subiendo..." : "Edit Image"}
+              </label>
             </div>
           </div>
 
