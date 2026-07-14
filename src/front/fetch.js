@@ -258,6 +258,7 @@ export const fetchDeleteProduct = async (productId) => {
 // FAVORITOS
 
 export const fetchUserFavorites = async (userId) => {
+  
   try {
     const token = localStorage.getItem("token");
 

@@ -298,7 +298,7 @@ export const ProductManager = () => {
                 type="button"
                 className="btn btn-primary rounded-pill px-4"
                 onClick={saveProduct}
-                disabled={uploadingIpipmage}
+                disabled={uploadingImage}
               >
                 {uploadingImage
                   ? "Subiendo..."

@@ -8,8 +8,8 @@ import { Login } from "./pages/Login";
 import Register from "./pages/Register";
 import ShopAdminView from "./pages/ShopAdminView";
 import { CustomerHome } from "./pages/CustomerHome";
-import UserView from "./pages/UserView"; 
-import { ProductManager } from "./pages/ProductManager"; 
+import UserView from "./pages/UserView";
+import { ProductManager } from "./pages/ProductManager";
 import ShoppingCart from "./pages/ShoppingCart";
 
 export const router = createBrowserRouter(
@@ -20,7 +20,7 @@ export const router = createBrowserRouter(
       <Route path="login" element={<Login />} />
       <Route path="register" element={<Register />} />
 
-      
+
       <Route path="admin-shop" element={<ShopAdminView />} />
       <Route path="/product-manager/:categoryId" element={<ProductManager />} />
 
