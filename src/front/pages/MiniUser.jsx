@@ -5,45 +5,40 @@ const MiniUser = () => {
     const {store} = UseGlobalReducer();
 
     return (
-        <div className="container">
-            <nav className="navbar navbar-expand bg-white border-bottom p-3">
-                <div className="container-fluid">
-                    <div className="collapse navbar-collapse justify-content-end">
-                        <ul className="navbar-nav">
-                            <li className="nav-item">
-                                <div className="dropdown">
-                                    <button className="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                        UserName
-                                    </button>
-                                    <ul className="dropdown-menu">
-                                        <li>
-                                            <div className="dropdown-item" >
-                                                <Link to="/user-view">
-                                                    View User
-                                                </Link>
-                                            </div>
-                                        </li>
-                                        <li>
-                                            <div className="dropdown-item d-flex align-items-center" >
-                                                <Link to="/shopping-cart">
-                                                    Shopping Cart
-                                                </Link>
-                                                <div>
-                                                    {store.cartItems.length > 0 && (
-                                                        <span className="badge bg-primary ms-2">{store.cartItems.length}</span>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </li>
-                                    </ul>
-                                </div>
-                            </li>
-                        </ul>
-                    </div>
-                </div>
-            </nav>
-        </div>
-    )
+  <div className="dropdown">
+    <button
+      className="btn btn-outline-light dropdown-toggle"
+      type="button"
+      data-bs-toggle="dropdown"
+      aria-expanded="false"
+    >
+      {store.user?.name || "Usuario"}
+    </button>
+
+    <ul className="dropdown-menu dropdown-menu-end">
+      <li>
+        <Link className="dropdown-item" to="/user-view">
+          Ver perfil
+        </Link>
+      </li>
+
+      <li>
+        <Link
+          className="dropdown-item d-flex align-items-center justify-content-between"
+          to="/shopping-cart"
+        >
+          <span>Carrito</span>
+
+          {store.cartItems.length > 0 && (
+            <span className="badge bg-primary ms-2">
+              {store.cartItems.length}
+            </span>
+          )}
+        </Link>
+      </li>
+    </ul>
+  </div>
+);
 }
 
 export default MiniUser

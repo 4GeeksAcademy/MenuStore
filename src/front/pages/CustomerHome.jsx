@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import MiniUser from "./MiniUser"; // ver si funciona el dropdwon en el navbar
 
 export const CustomerHome = () => {
   const urlApi = `${import.meta.env.VITE_BACKEND_URL}/api`;
@@ -16,7 +17,7 @@ export const CustomerHome = () => {
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [products, setProducts] = useState([]);
 
-  // Favoritos temporales del frontend
+  // Identificadores de los productos favoritos
   const [favorites, setFavorites] = useState([]);
 
   // Estados visuales
@@ -24,16 +25,24 @@ export const CustomerHome = () => {
   const [loadingProducts, setLoadingProducts] = useState(false);
   const [error, setError] = useState("");
 
-  // Al abrir CustomerHome, carga la tienda y las categorías
+  // Al abrir la página, carga la tienda y las categorías
   useEffect(() => {
     getStore();
     getCategories();
   }, []);
 
-  // Cada vez que cambia la categoría seleccionada,
-  // carga los productos correspondientes
+  // Cargar los favoritos del usuario
   useEffect(() => {
-    if (selectedCategory) {
+    if (userId) {
+      getFavorites();
+    } else {
+      setFavorites([]);
+    }
+  }, [userId]);
+
+  // Cargar productos cuando cambia la categoría seleccionada
+  useEffect(() => {
+    if (selectedCategory?.id) {
       getProductsByCategory(selectedCategory.id);
     } else {
       setProducts([]);
@@ -85,6 +94,12 @@ export const CustomerHome = () => {
         );
       }
 
+      if (!Array.isArray(data)) {
+        throw new Error(
+          "La respuesta de categorías no tiene el formato esperado."
+        );
+      }
+
       setCategories(data);
 
       if (data.length > 0) {
@@ -95,6 +110,10 @@ export const CustomerHome = () => {
       }
     } catch (error) {
       console.error("Error al cargar categorías:", error);
+
+      setCategories([]);
+      setSelectedCategory(null);
+      setProducts([]);
 
       setError(
         error.message ||
@@ -115,6 +134,12 @@ export const CustomerHome = () => {
         throw new Error(data.error || "Error al obtener los productos");
       }
 
+      if (!Array.isArray(data)) {
+        throw new Error(
+          "La respuesta de productos no tiene el formato esperado."
+        );
+      }
+
       setProducts(data);
     } catch (error) {
       console.error("Error al cargar productos:", error);
@@ -130,26 +155,112 @@ export const CustomerHome = () => {
     }
   };
 
-  const toggleFavorite = (productId) => {
+  const getFavorites = async () => {
+    try {
+      const data = await fetchUserFavorites(userId);
+
+      if (!Array.isArray(data)) {
+        console.error(
+          "La respuesta de favoritos no es una lista:",
+          data
+        );
+
+        setFavorites([]);
+        return;
+      }
+
+      const favoriteProductIds = data
+        .map((favorite) => favorite.product_id)
+        .filter((productId) => productId !== undefined);
+
+      setFavorites(favoriteProductIds);
+    } catch (error) {
+      console.error("Error al cargar favoritos:", error);
+      setFavorites([]);
+    }
+  };
+
+  const toggleFavorite = async (productId) => {
+    if (!userId) {
+      alert("Debes iniciar sesión para usar favoritos");
+      return;
+    }
+
     const productIsFavorite = favorites.includes(productId);
 
-    if (productIsFavorite) {
-      setFavorites(
-        favorites.filter(
-          (favoriteId) => favoriteId !== productId
-        )
+    try {
+      if (productIsFavorite) {
+        await fetchDeleteFavorite(userId, productId);
+
+        setFavorites((currentFavorites) =>
+          currentFavorites.filter(
+            (favoriteId) => favoriteId !== productId
+          )
+        );
+      } else {
+        await fetchAddFavorite(userId, productId);
+
+        setFavorites((currentFavorites) => [
+          ...currentFavorites,
+          productId
+        ]);
+      }
+    } catch (error) {
+      console.error("Error al modificar favoritos:", error);
+
+      alert(
+        error.message ||
+        "No se pudo modificar el favorito"
       );
-    } else {
-      setFavorites([...favorites, productId]);
     }
+  };
+
+  const addToCart = async (productId) => {
+    if (!userId) {
+      alert(
+        "Debes iniciar sesión para agregar productos al carrito"
+      );
+      return;
+    }
+
+    try {
+      await fetchAddToCart(userId, productId);
+
+      alert("Producto agregado al carrito correctamente");
+    } catch (error) {
+      console.error(
+        "Error al agregar producto al carrito:",
+        error
+      );
+
+      alert(
+        error.message ||
+        "No se pudo agregar el producto al carrito"
+      );
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+
+    setFavorites([]);
   };
 
   return (
     <div className="bg-light min-vh-100">
-      <nav className="navbar navbar-dark bg-dark shadow-sm px-4 justify-content-end">
-        <Link to="/login" className="btn btn-light">
-          Cerrar sesión
-        </Link>
+      <nav className="navbar navbar-dark bg-dark shadow-sm px-4 py-2">
+        <div className="ms-auto d-flex align-items-center gap-2">
+          <MiniUser />
+
+          <Link
+            to="/login"
+            className="btn btn-outline-light"
+            onClick={handleLogout}
+          >
+            Cerrar sesión
+          </Link>
+        </div>
       </nav>
 
       <div className="container bg-white shadow rounded my-4 p-0">
@@ -309,11 +420,10 @@ export const CustomerHome = () => {
                     />
                   </div>
 
-                  {/* Solo visual por ahora.
-                      Después se conectará con el carrito. */}
                   <button
                     type="button"
                     className="btn btn-success rounded-pill px-4"
+                    onClick={() => addToCart(product.id)}
                   >
                     <i className="fa-solid fa-cart-plus me-2" />
                     Agregar al carrito
