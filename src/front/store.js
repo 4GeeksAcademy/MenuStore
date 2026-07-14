@@ -1,4 +1,10 @@
 export const initialStore = () => ({
+  user: {
+    id: null,
+    name: null,
+    email: null,
+    image: null
+  },
   cartItems: [
     
   ],
@@ -7,22 +13,29 @@ export const initialStore = () => ({
 })
 
 export default function storeReducer(store, action = {}) {
-  switch(action.type){
-    case 'set_hello':
+
+  const { type, payload } = action;
+  
+  switch(type){
+    
+    case 'USER_IMAGE':
       return {
         ...store,
-        message: action.payload
+        user: {
+          ...store.user,
+          image: payload
+        }
       };
       
-    case 'add_task':
+    case 'LOAD_USER':
 
-      const { id,  color } = action.payload
+      const { id,  color } = payload
 
       return {
         ...store,
         todos: store.todos.map((todo) => (todo.id === id ? { ...todo, background: color } : todo))
       };
     default:
-      throw Error('Unknown action.');
+      return store;
   }    
 }

@@ -1,4 +1,7 @@
+import { useGlobalReducer } from "./context/GlobalContext";
 
+
+const {store, dispatch} = useGlobalReducer();
 // const urlApi = "https://animated-memory-5g4qw67xgjjrh44xp-3001.app.github.dev/api" //
 
 const urlApi = `${import.meta.env.VITE_BACKEND_URL}/api`; // debido a falla al momento de ejecutar funciones de admin shop me sugirio esta urlAPI
@@ -275,3 +278,26 @@ export const fetchDeleteProduct = async (productId) => {
     throw error;
   }
 };
+
+  //Imagen Usuario
+export const fetchUserImage = async (formData) => {
+
+  try {
+    const response = await fetch("https://api.cloudinary.com/v1_1/dk0xwtjyr/image", {
+      method: 'POST',
+      body: formData
+    });
+
+    if (!response.ok) {
+      throw new Error('Error al subir la imagen');
+    }
+
+    const data = await response.json();
+    console.log('Imagen subida exitosamente:', data);
+    dispatch({ type: 'USER_IMAGE', payload: data.secure_url });
+
+  } catch (error) {
+    console.error('Error al subir la imagen:', error);
+    throw error;
+  }
+}
