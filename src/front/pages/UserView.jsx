@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { fetchUserImage } from '../fetch';
-import { useGlobalReducer } from '../store';
+
+import useGlobalReducer from "../hooks/useGlobalReducer.jsx";
 
 const UserView = () => {
 
@@ -11,7 +11,7 @@ const UserView = () => {
         email: "",
 
     });
-    const {store} = useGlobalReducer();
+    const { store, dispatch } = useGlobalReducer();
 
     const handleFileChange = (e) => {
         setSelectedFile(e.target.files[0]);
@@ -24,12 +24,26 @@ const UserView = () => {
         formData.append("upload_preset", "MenuStore")
 
         try {
-            await fetchUserImage(formData);
-            alert('Imagen subida correctamente');
+            const response = await fetch("https://api.cloudinary.com/v1_1/dk0xwtjyr/image/upload", {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!response.ok) {
+                throw new Error('Error al subir la imagen');
+            }
+
+            const data = await response.json();
+            console.log('Imagen subida exitosamente:', data);
+            dispatch({ type: 'USER_IMAGE', payload: data.secure_url });
+
         } catch (error) {
             console.error('Error al subir la imagen:', error);
-            alert('Error al subir la imagen');
+            throw error;
         }
+
+        alert('Imagen subida correctamente');
+
     }
 
     return (

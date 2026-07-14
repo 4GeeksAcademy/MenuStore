@@ -1,15 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
-import {
-  fetchProductsByCategory,
-  fetchCreateProduct,
-  fetchUpdateProduct,
-  fetchDeleteProduct
-} from "../fetch.js";
-
 export const ProductManager = () => {
   const { categoryId } = useParams();
+  const urlApi = `${import.meta.env.VITE_BACKEND_URL}/api`;
 
   const [products, setProducts] = useState([]);
 
@@ -29,7 +23,12 @@ export const ProductManager = () => {
     try {
       setLoading(true);
 
-      const data = await fetchProductsByCategory(categoryId);
+      const response = await fetch(`${urlApi}/products/category/${categoryId}`);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Error al obtener los productos");
+      }
 
       setProducts(data);
     } catch (error) {
@@ -69,25 +68,47 @@ export const ProductManager = () => {
     };
 
     try {
+      let response;
+      let responseData;
+
       if (editingId) {
-        const updatedProduct = await fetchUpdateProduct(
-          editingId,
-          productData
-        );
+        response = await fetch(`${urlApi}/products/${editingId}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(productData)
+        });
+        responseData = await response.json();
+
+        if (!response.ok) {
+          throw new Error(responseData.error || "Error al actualizar el producto");
+        }
 
         setProducts(
           products.map((product) =>
             product.id === editingId
-              ? updatedProduct
+              ? responseData
               : product
           )
         );
 
         alert("Producto actualizado correctamente");
       } else {
-        const newProduct = await fetchCreateProduct(productData);
+        response = await fetch(`${urlApi}/products`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(productData)
+        });
+        responseData = await response.json();
 
-        setProducts([...products, newProduct]);
+        if (!response.ok) {
+          throw new Error(responseData.error || "Error al crear el producto");
+        }
+
+        setProducts([...products, responseData]);
 
         alert("Producto guardado correctamente");
       }
@@ -120,7 +141,14 @@ export const ProductManager = () => {
     if (!confirmed) return;
 
     try {
-      const data = await fetchDeleteProduct(productId);
+      const response = await fetch(`${urlApi}/products/${productId}`, {
+        method: "DELETE"
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Error al eliminar el producto");
+      }
 
       setProducts(
         products.filter((product) => product.id !== productId)

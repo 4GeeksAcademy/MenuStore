@@ -1,9 +1,10 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { fetchLogin } from "../fetch.js";
+
 
 export const Login = () => {
   const navigate = useNavigate();
+  const urlApi = `${import.meta.env.VITE_BACKEND_URL}/api`;
 
   const [inputData, setInputData] = useState({
     email: "",
@@ -22,25 +23,32 @@ export const Login = () => {
   const handleLogin = async (e) => {
     e.preventDefault();
 
-    if (
-      !inputData.email.trim() ||
-      !inputData.password.trim()
-    ) {
+    if (!inputData.email.trim() || !inputData.password.trim()) {
       alert("Por favor completa todos los campos");
       return;
     }
 
     try {
-      const data = await fetchLogin({
-        email: inputData.email.trim(),
-        password: inputData.password
+      const response = await fetch(`${urlApi}/user/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          email: inputData.email.trim(),
+          password: inputData.password
+        })
       });
 
-      // Esta página es solamente para clientes
+      if (!response.ok) {
+        throw new Error('Correo o contraseña incorrectos');
+      }
+
+      const data = await response.json();
+      console.log('Inicio de sesión exitoso:', data);
+
       if (data.user?.role !== "client") {
-        alert(
-          "Estas credenciales no pertenecen a una cuenta de cliente"
-        );
+        alert("Estas credenciales no pertenecen a una cuenta de cliente");
         return;
       }
 
@@ -49,20 +57,15 @@ export const Login = () => {
       }
 
       if (data.user) {
-        localStorage.setItem(
-          "user",
-          JSON.stringify(data.user)
-        );
+        localStorage.setItem("user", JSON.stringify(data.user));
       }
 
       navigate("/");
-    } catch (error) {
-      console.error("Error al iniciar sesión:", error);
+      return data;
 
-      alert(
-        error.message ||
-          "Correo o contraseña incorrectos"
-      );
+    } catch (error) {
+      console.error('Error al iniciar sesión:', error);
+      alert(error.message || "Ocurrió un error inesperado");
     }
   };
 

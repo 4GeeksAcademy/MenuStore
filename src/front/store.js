@@ -1,9 +1,9 @@
 export const initialStore = () => ({
   user: {
-    id: null,
-    name: null,
-    email: null,
-    image: null
+    id: "",
+    name: "",
+    email: "",
+    image: ""
   },
   cartItems: [
     
@@ -27,14 +27,7 @@ export default function storeReducer(store, action = {}) {
         }
       };
       
-    case 'LOAD_USER':
-
-      const { id,  color } = payload
-
-      return {
-        ...store,
-        todos: store.todos.map((todo) => (todo.id === id ? { ...todo, background: color } : todo))
-      };
+    
     default:
       return store;
   }    

@@ -1,16 +1,9 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
-import {
-  fetchStore,
-  fetchUpdateStore,
-  fetchCategories,
-  fetchCreateCategory,
-  fetchDeleteCategory
-} from "../fetch.js";
-
 const ShopAdminView = () => {
   const navigate = useNavigate();
+  const urlApi = `${import.meta.env.VITE_BACKEND_URL}/api`;
 
   const [shopName, setShopName] = useState("");
   const [categoryName, setCategoryName] = useState("");
@@ -24,7 +17,14 @@ const ShopAdminView = () => {
 
   const getStore = async () => {
     try {
-      const data = await fetchStore();
+      const response = await fetch(`${urlApi}/store`);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.error || data.message || "Error al obtener la tienda"
+        );
+      }
 
       setShopName(data.name || "");
     } catch (error) {
@@ -35,7 +35,14 @@ const ShopAdminView = () => {
 
   const getCategories = async () => {
     try {
-      const data = await fetchCategories();
+      const response = await fetch(`${urlApi}/categories`);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.error || data.message || "Error al obtener las categorías"
+        );
+      }
 
       setCategories(data);
 
@@ -57,9 +64,18 @@ const ShopAdminView = () => {
     }
 
     try {
-      const data = await fetchUpdateStore({
-        name: shopName.trim()
+      const response = await fetch(`${urlApi}/store`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ name: shopName.trim() })
       });
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Error al actualizar la tienda");
+      }
 
       setShopName(data.name || shopName);
 
@@ -71,18 +87,26 @@ const ShopAdminView = () => {
   };
 
   const addCategory = async () => {
-    console.log("Botón añadir presionado");
-    console.log("categoryName:", categoryName);
-
     if (!categoryName.trim()) {
       alert("Escribe una categoría");
       return;
     }
 
     try {
-      const data = await fetchCreateCategory({
-        name: categoryName.trim().toLowerCase()
+      const response = await fetch(`${urlApi}/categories`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          name: categoryName.trim().toLowerCase()
+        })
       });
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Error al crear la categoría");
+      }
 
       setCategories([...categories, data]);
       setSelectedCategoryId(data.id);
@@ -102,7 +126,14 @@ const ShopAdminView = () => {
     }
 
     try {
-      await fetchDeleteCategory(selectedCategoryId);
+      const response = await fetch(`${urlApi}/categories/${selectedCategoryId}`, {
+        method: "DELETE"
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Error al eliminar la categoría");
+      }
 
       const updatedCategories = categories.filter(
         (category) =>

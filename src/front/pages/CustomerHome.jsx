@@ -1,13 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
-import {
-  fetchStore,
-  fetchCategories,
-  fetchProductsByCategory
-} from "../fetch.js";
-
 export const CustomerHome = () => {
+  const urlApi = `${import.meta.env.VITE_BACKEND_URL}/api`;
+
   // Datos generales de la tienda
   const [shopName, setShopName] = useState("Shop Name");
   const [shopLogo, setShopLogo] = useState("");
@@ -49,20 +45,27 @@ export const CustomerHome = () => {
       setLoadingStore(true);
       setError("");
 
-      const data = await fetchStore();
+      const response = await fetch(`${urlApi}/store`);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.error || data.message || "Error al obtener la tienda"
+        );
+      }
 
       setShopName(data.name || "Shop Name");
       setShopLogo(data.logo || "");
       setShopDescription(
         data.description ||
-          "Explora nuestros productos y servicios disponibles."
+        "Explora nuestros productos y servicios disponibles."
       );
     } catch (error) {
       console.error("Error al cargar la tienda:", error);
 
       setError(
         error.message ||
-          "No se pudo cargar la información de la tienda."
+        "No se pudo cargar la información de la tienda."
       );
     } finally {
       setLoadingStore(false);
@@ -73,7 +76,14 @@ export const CustomerHome = () => {
     try {
       setError("");
 
-      const data = await fetchCategories();
+      const response = await fetch(`${urlApi}/categories`);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.error || data.message || "Error al obtener las categorías"
+        );
+      }
 
       setCategories(data);
 
@@ -88,7 +98,7 @@ export const CustomerHome = () => {
 
       setError(
         error.message ||
-          "No se pudieron cargar las categorías."
+        "No se pudieron cargar las categorías."
       );
     }
   };
@@ -98,7 +108,12 @@ export const CustomerHome = () => {
       setLoadingProducts(true);
       setError("");
 
-      const data = await fetchProductsByCategory(categoryId);
+      const response = await fetch(`${urlApi}/products/category/${categoryId}`);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Error al obtener los productos");
+      }
 
       setProducts(data);
     } catch (error) {
@@ -108,7 +123,7 @@ export const CustomerHome = () => {
 
       setError(
         error.message ||
-          "No se pudieron cargar los productos."
+        "No se pudieron cargar los productos."
       );
     } finally {
       setLoadingProducts(false);

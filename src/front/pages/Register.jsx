@@ -1,11 +1,12 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
-import { fetchRegister } from "../fetch";
+
 
 
 const Register = () => {
+    const urlApi = `${import.meta.env.VITE_BACKEND_URL}/api`;
     const navigate = useNavigate();
-    
+
     const [inputData, setInputData] = useState({
         username: "",
         email: "",
@@ -33,14 +34,33 @@ const Register = () => {
             return;
         }
 
-        try{
+        try {
+            const response = await fetch(`${urlApi}/user`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    username: inputData.username.trim(),
+                    email: inputData.email.trim(),
+                    password: inputData.password
+                })
+            });
 
-            await fetchRegister(inputData);
-            alert("Usuario registrado correctamente");
-            navigate("/login");
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.error || errorData.message || 'Error en la solicitud');
+            }
+
+            const data = await response.json();
+            console.log('Registro exitoso:', data);
+            alert('Registro exitoso. Ahora puedes iniciar sesión.');
+            navigate('/login');
+            return data;
 
         } catch (error) {
             console.error('Error al registrar usuario:', error);
+            alert(error.message || 'Ocurrió un error inesperado');
         }
     };
 
