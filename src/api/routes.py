@@ -231,7 +231,15 @@ def private_user():
 
 
 @api.route("/user/<int:user_id>", methods=["PUT"])
+@jwt_required()
 def update_user(user_id):
+    current_user_id = int(get_jwt_identity())
+
+    if current_user_id != user_id:
+        return jsonify({
+            "error": "No autorizado"
+        }), 403
+
     data = request.get_json()
 
     if not data:
@@ -314,7 +322,15 @@ def update_user(user_id):
 
 
 @api.route("/user/<int:user_id>", methods=["DELETE"])
+@jwt_required()
 def delete_user(user_id):
+    current_user_id = int(get_jwt_identity())
+
+    if current_user_id != user_id:
+        return jsonify({
+            "error": "No autorizado"
+        }), 403
+
     user = db.session.get(User, user_id)
 
     if user is None:
@@ -345,7 +361,15 @@ def delete_user(user_id):
 # =========================================================
 
 @api.route("/user/cart/<int:user_id>", methods=["GET"])
+@jwt_required()
 def get_user_cart(user_id):
+    current_user_id = int(get_jwt_identity())
+
+    if current_user_id != user_id:
+        return jsonify({
+            "error": "No autorizado"
+        }), 403
+
     user = db.session.get(User, user_id)
 
     if user is None:
@@ -366,6 +390,7 @@ def get_user_cart(user_id):
 
 
 @api.route("/cart/add", methods=["POST"])
+@jwt_required()
 def add_product_to_cart():
     data = request.get_json()
 
@@ -374,12 +399,12 @@ def add_product_to_cart():
             "error": "Datos no enviados"
         }), 400
 
-    user_id = data.get("userId")
+    user_id = int(get_jwt_identity())
     product_id = data.get("productId")
 
-    if not user_id or not product_id:
+    if not product_id:
         return jsonify({
-            "error": "Falta userId o productId"
+            "error": "Falta productId"
         }), 400
 
     user = db.session.get(User, user_id)
@@ -402,7 +427,6 @@ def add_product_to_cart():
 
     if cart is None:
         cart = Cart(user_id=user_id)
-
         db.session.add(cart)
         db.session.flush()
 
@@ -415,14 +439,12 @@ def add_product_to_cart():
 
     if cart_item:
         cart_item.quantity += 1
-
     else:
         cart_item = Cart_Items(
             cart_id=cart.id,
             product_id=product_id,
             quantity=1
         )
-
         db.session.add(cart_item)
 
     try:
@@ -435,7 +457,6 @@ def add_product_to_cart():
 
     except Exception as error:
         db.session.rollback()
-
         print("Error al agregar producto al carrito:", error)
 
         return jsonify({
@@ -444,42 +465,31 @@ def add_product_to_cart():
 
 
 @api.route("/cart/update-quantity", methods=["PUT"])
+@jwt_required()
 def update_cart_item_quantity():
     data = request.get_json()
 
-    if (
-        not data
-        or "userId" not in data
-        or "productId" not in data
-        or "quantity" not in data
-    ):
-        return jsonify({
-            "error": "Datos no enviados o incompletos"
-        }), 400
-
-    user_id = data.get("userId")
     product_id = data.get("productId")
     quantity = data.get("quantity")
 
+    if product_id is None:
+        return jsonify({
+            "error": "Falta productId"
+        }), 400
+
+    if quantity is None:
+        return jsonify({
+            "error": "Falta quantity"
+        }), 400
+
     try:
         quantity = int(quantity)
-
     except (TypeError, ValueError):
         return jsonify({
             "error": "La cantidad debe ser un número entero"
         }), 400
 
-    if quantity < 1:
-        return jsonify({
-            "error": "La cantidad debe ser al menos 1"
-        }), 400
-
-    user = db.session.get(User, user_id)
-
-    if user is None:
-        return jsonify({
-            "error": "Usuario no encontrado"
-        }), 404
+    user_id = int(get_jwt_identity())
 
     cart = db.session.scalar(
         db.select(Cart).filter_by(user_id=user_id)
@@ -487,7 +497,7 @@ def update_cart_item_quantity():
 
     if cart is None:
         return jsonify({
-            "error": "Carrito no encontrado para el usuario"
+            "error": "Carrito no encontrado"
         }), 404
 
     cart_item = db.session.scalar(
@@ -502,36 +512,35 @@ def update_cart_item_quantity():
             "error": "Producto no encontrado en el carrito"
         }), 404
 
-    cart_item.quantity = quantity
-
-    try:
+    # Si llega 0, elimina solamente este producto
+    if quantity == 0:
+        db.session.delete(cart_item)
         db.session.commit()
 
         return jsonify({
-            "message": "Cantidad actualizada correctamente",
-            "cart": cart.serialize()
+            "message": "Producto eliminado del carrito"
         }), 200
 
-    except Exception as error:
-        db.session.rollback()
-
-        print("Error al actualizar cantidad:", error)
-
+    # Solo rechaza números negativos
+    if quantity < 0:
         return jsonify({
-            "error": "Error al actualizar la cantidad del producto"
-        }), 500
+            "error": "La cantidad no puede ser negativa"
+        }), 400
+
+    cart_item.quantity = quantity
+    db.session.commit()
+
+    return jsonify({
+        "message": "Cantidad actualizada",
+        "cart_item": cart_item.serialize()
+    }), 200
 
 
 @api.route("/cart/clear", methods=["DELETE"])
+@jwt_required()
 def clear_cart():
-    data = request.get_json()
 
-    if not data or "userId" not in data:
-        return jsonify({
-            "error": "Datos no enviados o incompletos"
-        }), 400
-
-    user_id = data.get("userId")
+    user_id = int(get_jwt_identity())
 
     cart = db.session.scalar(
         db.select(Cart).filter_by(user_id=user_id)
@@ -564,10 +573,10 @@ def clear_cart():
             "error": "Error al vaciar el carrito"
         }), 500
 
-
 # =========================================================
 # TIENDA
 # =========================================================
+
 
 @api.route("/store", methods=["GET"])
 def get_store():

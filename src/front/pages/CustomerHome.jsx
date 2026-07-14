@@ -231,7 +231,7 @@ export const CustomerHome = () => {
     }
 
     try {
-      await fetchAddToCart(userId, productId);
+      await fetchAddToCart(productId);
 
       alert("Producto agregado al carrito correctamente");
     } catch (error) {

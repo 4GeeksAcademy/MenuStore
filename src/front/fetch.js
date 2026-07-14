@@ -72,11 +72,23 @@ export const fetchStore = async () => {
   try {
     const response = await fetch(`${urlApi}/store`);
 
+    const contentType = response.headers.get("content-type");
+
+    if (!contentType || !contentType.includes("application/json")) {
+      const text = await response.text();
+
+      console.error("Respuesta no JSON:", text);
+
+      throw new Error(
+        `El backend no devolvió JSON. Revisa la ruta: ${response.url}`
+      );
+    }
+
     const data = await response.json();
 
     if (!response.ok) {
       throw new Error(
-        data.error || data.message || "Error al obtener la tienda",
+        data.error || data.message || "Error al obtener la tienda"
       );
     }
 
@@ -258,7 +270,6 @@ export const fetchDeleteProduct = async (productId) => {
 // FAVORITOS
 
 export const fetchUserFavorites = async (userId) => {
-  
   try {
     const token = localStorage.getItem("token");
 
@@ -338,15 +349,45 @@ export const fetchDeleteFavorite = async (userId, productId) => {
 
 // CARRITO
 
-export const fetchAddToCart = async (userId, productId) => {
+export const fetchUserCart = async (userId) => {
   try {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(`${urlApi}/user/cart/${userId}`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data.error ||
+          data.msg ||
+          "Error al obtener el carrito"
+      );
+    }
+
+    return data;
+  } catch (error) {
+    console.error("Error al obtener el carrito:", error);
+    throw error;
+  }
+};
+
+export const fetchAddToCart = async (productId) => {
+  try {
+    const token = localStorage.getItem("token");
+
     const response = await fetch(`${urlApi}/cart/add`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({
-        userId: userId,
         productId: productId,
       }),
     });
@@ -354,7 +395,9 @@ export const fetchAddToCart = async (userId, productId) => {
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.error || "Error al agregar el producto al carrito");
+      throw new Error(
+        data.error || data.msg || "Error al agregar el producto al carrito",
+      );
     }
 
     return data;
@@ -365,19 +408,58 @@ export const fetchAddToCart = async (userId, productId) => {
   }
 };
 
-export const fetchUserCart = async (userId) => {
+export const fetchUpdateCartQuantity = async (productId, quantity) => {
   try {
-    const response = await fetch(`${urlApi}/user/cart/${userId}`);
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(`${urlApi}/cart/update-quantity`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        productId,
+        quantity,
+      }),
+    });
 
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.error || "Error al obtener el carrito");
+      throw new Error(
+        data.error || data.msg || "Error al actualizar la cantidad",
+      );
     }
 
     return data;
   } catch (error) {
-    console.error("Error al obtener el carrito:", error);
+    console.error("Error al actualizar la cantidad del carrito:", error);
+
+    throw error;
+  }
+};
+
+export const fetchClearCart = async () => {
+  try {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(`${urlApi}/cart/clear`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || data.msg || "Error al vaciar el carrito");
+    }
+
+    return data;
+  } catch (error) {
+    console.error("Error al vaciar el carrito:", error);
     throw error;
   }
 };
