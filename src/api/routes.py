@@ -171,9 +171,9 @@ def login_client():
             "error": "La cuenta está desactivada"
         }), 403
 
-    if user.role != "client":
+    if user.role not in ("client", "admin"):
         return jsonify({
-            "error": "Esta cuenta no corresponde a un cliente"
+            "error": "Esta cuenta no corresponde a un cliente ni administrador"
         }), 403
 
     if not check_password_hash(user.password, password):
@@ -405,11 +405,11 @@ def add_product_to_cart():
         }), 404
 
     cart = (
-    db.session.execute(
-        db.select(Cart).filter_by(user_id=user_id)
-    )
-    .unique()
-    .scalar_one_or_none()
+        db.session.execute(
+            db.select(Cart).filter_by(user_id=user_id)
+        )
+        .unique()
+        .scalar_one_or_none()
     )
 
     if cart is None:
@@ -559,10 +559,11 @@ def clear_cart():
         return jsonify({
             "error": "Error al vaciar el carrito"
         }), 500
-    
+
 # =========================================================
 # PAGO DE CARRITO
 # =========================================================
+
 
 @api.route("/checkout", methods=["POST"])
 @jwt_required()
@@ -1215,8 +1216,6 @@ def delete_favorite(user_id, product_id):
     }), 200
 
 
-
-
 # =========================================================
 # HISTORIAL PEDIDOS
 # =========================================================
@@ -1240,6 +1239,7 @@ def get_user_orders():
         order.serialize()
         for order in orders
     ]), 200
+
 
 @api.route("/orders/<int:order_id>", methods=["GET"])
 @jwt_required()

@@ -6,6 +6,7 @@ import {
 
 import { Layout } from "./pages/Layout";
 import { Login } from "./pages/Login";
+import { AdminLogin } from "./pages/AdminLogin";
 import Register from "./pages/Register";
 import ShopAdminView from "./pages/ShopAdminView";
 import { CustomerHome } from "./pages/CustomerHome";
@@ -38,6 +39,11 @@ export const router = createBrowserRouter(
       <Route
         path="register"
         element={<Register />}
+      />
+
+      <Route
+        path="admin-login"
+        element={<AdminLogin />}
       />
 
       {/* Rutas privadas para cualquier usuario autenticado */}
