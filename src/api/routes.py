@@ -26,7 +26,9 @@ from api.models import (
     Product,
     Cart,
     Cart_Items,
-    Favorite
+    Favorite,
+    Order,
+    Order_Items
 )
 
 
@@ -421,8 +423,12 @@ def add_product_to_cart():
             "error": "Producto no encontrado"
         }), 404
 
-    cart = db.session.scalar(
+    cart = (
+    db.session.execute(
         db.select(Cart).filter_by(user_id=user_id)
+    )
+    .unique()
+    .scalar_one_or_none()
     )
 
     if cart is None:
@@ -571,6 +577,87 @@ def clear_cart():
 
         return jsonify({
             "error": "Error al vaciar el carrito"
+        }), 500
+    
+# =========================================================
+# PAGO DE CARRITO
+# =========================================================
+
+@api.route("/checkout", methods=["POST"])
+@jwt_required()
+def checkout():
+    user_id = int(get_jwt_identity())
+
+    cart = (
+        db.session.execute(
+            db.select(Cart).filter_by(user_id=user_id)
+        )
+        .unique()
+        .scalar_one_or_none()
+    )
+
+    if cart is None:
+        return jsonify({
+            "error": "Carrito no encontrado"
+        }), 404
+
+    cart_items = (
+        db.session.execute(
+            db.select(Cart_Items).filter_by(cart_id=cart.id)
+        )
+        .unique()
+        .scalars()
+        .all()
+    )
+
+    if not cart_items:
+        return jsonify({
+            "error": "El carrito está vacío"
+        }), 400
+
+    total_amount = sum(
+        cart_item.quantity * float(cart_item.product.price)
+        for cart_item in cart_items
+    )
+
+    try:
+        new_order = Order(
+            user_id=user_id,
+            total_amount=total_amount,
+            status="completed"
+        )
+
+        db.session.add(new_order)
+        db.session.flush()
+
+        for cart_item in cart_items:
+            order_item = Order_Items(
+                order_id=new_order.id,
+                product_id=cart_item.product_id,
+                quantity=cart_item.quantity,
+                historic_price=float(cart_item.product.price)
+            )
+
+            db.session.add(order_item)
+
+        for cart_item in cart_items:
+            db.session.delete(cart_item)
+
+        db.session.commit()
+
+        return jsonify({
+            "message": "Compra realizada correctamente",
+            "order": new_order.serialize()
+        }), 201
+
+    except Exception as error:
+        db.session.rollback()
+
+        print("Error al procesar el checkout:", error)
+
+        return jsonify({
+            "error": "No se pudo completar la compra",
+            "details": str(error)
         }), 500
 
 # =========================================================
@@ -1135,3 +1222,51 @@ def delete_favorite(user_id, product_id):
     return jsonify({
         "message": "Favorito eliminado correctamente"
     }), 200
+
+
+# =========================================================
+# HISTORIAL PEDIDOS
+# =========================================================
+@api.route("/orders", methods=["GET"])
+@jwt_required()
+def get_user_orders():
+    user_id = int(get_jwt_identity())
+
+    orders = (
+        db.session.execute(
+            db.select(Order)
+            .where(Order.user_id == user_id)
+            .order_by(Order.date.desc())
+        )
+        .unique()
+        .scalars()
+        .all()
+    )
+
+    return jsonify([
+        order.serialize()
+        for order in orders
+    ]), 200
+
+@api.route("/orders/<int:order_id>", methods=["GET"])
+@jwt_required()
+def get_user_order(order_id):
+    user_id = int(get_jwt_identity())
+
+    order = (
+        db.session.execute(
+            db.select(Order).where(
+                Order.id == order_id,
+                Order.user_id == user_id
+            )
+        )
+        .unique()
+        .scalar_one_or_none()
+    )
+
+    if order is None:
+        return jsonify({
+            "error": "Pedido no encontrado"
+        }), 404
+
+    return jsonify(order.serialize()), 200

@@ -1,6 +1,6 @@
 // const urlApi = "https://animated-memory-5g4qw67xgjjrh44xp-3001.app.github.dev/api" //
 
-const urlApi = `${import.meta.env.VITE_BACKEND_URL}/api`; // debido a falla al momento de ejecutar funciones de admin shop me sugirio esta urlAPI
+const urlApi = `${import.meta.env.VITE_BACKEND_URL}/api`; 
 
 export const fetchRegister = async (userData) => {
   try {
@@ -54,11 +54,18 @@ export const fetchLogin = async (userData) => {
       },
       body: JSON.stringify(userData),
     });
-    if (!response.ok) {
-      throw new Error("Error en la solicitud");
-    }
+
     const data = await response.json();
-    console.log("Inicio de sesión exitoso:", data);
+
+    if (!response.ok) {
+      throw new Error(
+        data.error ||
+          data.msg ||
+          data.message ||
+          "Correo o contraseña incorrectos",
+      );
+    }
+
     return data;
   } catch (error) {
     console.error("Error al iniciar sesión:", error);
@@ -80,7 +87,7 @@ export const fetchStore = async () => {
       console.error("Respuesta no JSON:", text);
 
       throw new Error(
-        `El backend no devolvió JSON. Revisa la ruta: ${response.url}`
+        `El backend no devolvió JSON. Revisa la ruta: ${response.url}`,
       );
     }
 
@@ -88,7 +95,7 @@ export const fetchStore = async () => {
 
     if (!response.ok) {
       throw new Error(
-        data.error || data.message || "Error al obtener la tienda"
+        data.error || data.message || "Error al obtener la tienda",
       );
     }
 
@@ -363,11 +370,7 @@ export const fetchUserCart = async (userId) => {
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(
-        data.error ||
-          data.msg ||
-          "Error al obtener el carrito"
-      );
+      throw new Error(data.error || data.msg || "Error al obtener el carrito");
     }
 
     return data;
@@ -440,6 +443,7 @@ export const fetchUpdateCartQuantity = async (productId, quantity) => {
   }
 };
 
+//CONECTAR BOTON DE CARRITO A CARRITO
 export const fetchClearCart = async () => {
   try {
     const token = localStorage.getItem("token");
@@ -460,6 +464,32 @@ export const fetchClearCart = async () => {
     return data;
   } catch (error) {
     console.error("Error al vaciar el carrito:", error);
+    throw error;
+  }
+};
+
+export const fetchCheckout = async () => {
+  try {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(`${urlApi}/checkout`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data.error || data.msg || "No se pudo completar la compra",
+      );
+    }
+
+    return data;
+  } catch (error) {
+    console.error("Error al procesar el checkout:", error);
     throw error;
   }
 };
@@ -499,6 +529,115 @@ export const fetchUploadImage = async (file) => {
     return data.secure_url;
   } catch (error) {
     console.error("Error al subir imagen a Cloudinary:", error);
+    throw error;
+  }
+};
+
+////   ÓRDENES  ////////
+export const fetchUserOrders = async () => {
+  try {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(`${urlApi}/orders`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data.error || data.msg || "No se pudieron obtener los pedidos",
+      );
+    }
+
+    return data;
+  } catch (error) {
+    console.error("Error al obtener el historial de pedidos:", error);
+
+    throw error;
+  }
+};
+
+export const fetchOrderDetail = async (orderId) => {
+  try {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(`${urlApi}/orders/${orderId}`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || data.msg || "No se pudo obtener el pedido");
+    }
+
+    return data;
+  } catch (error) {
+    console.error("Error al obtener el detalle del pedido:", error);
+
+    throw error;
+  }
+};
+
+/////// UPDATE USER ///////////
+
+export const fetchUpdateUser = async (userId, userData) => {
+  try {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(`${urlApi}/user/${userId}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(userData),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data.error || data.msg || "No se pudo actualizar el usuario",
+      );
+    }
+
+    return data;
+  } catch (error) {
+    console.error("Error al actualizar usuario:", error);
+    throw error;
+  }
+};
+
+export const fetchDeleteUser = async (userId) => {
+  try {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(`${urlApi}/user/${userId}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data.error || data.msg || "No se pudo eliminar la cuenta",
+      );
+    }
+
+    return data;
+  } catch (error) {
+    console.error("Error al eliminar usuario:", error);
     throw error;
   }
 };

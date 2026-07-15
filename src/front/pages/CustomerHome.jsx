@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import MiniUser from "./MiniUser"; // ver si funciona el dropdwon en el navbar
+import MiniUser from "./MiniUser";
 
 import {
   fetchStore,
@@ -9,11 +9,10 @@ import {
   fetchUserFavorites,
   fetchAddFavorite,
   fetchDeleteFavorite,
-  fetchAddToCart
+  fetchAddToCart,
 } from "../fetch.js";
 
 export const CustomerHome = () => {
-  // Recuperar de forma segura al usuario que inició sesión
   const savedUser = localStorage.getItem("user");
 
   let loggedUser = null;
@@ -23,7 +22,10 @@ export const CustomerHome = () => {
       ? JSON.parse(savedUser)
       : null;
   } catch (error) {
-    console.error("Error al leer el usuario guardado:", error);
+    console.error(
+      "Error al leer el usuario guardado:",
+      error
+    );
 
     localStorage.removeItem("user");
     localStorage.removeItem("token");
@@ -31,42 +33,40 @@ export const CustomerHome = () => {
 
   const userId = loggedUser?.id;
 
-  // Datos generales de la tienda
-  const [shopName, setShopName] = useState("Shop Name");
+  const [shopName, setShopName] = useState("MenuStore");
   const [shopLogo, setShopLogo] = useState("");
   const [shopDescription, setShopDescription] = useState(
     "Explora nuestros productos y servicios disponibles."
   );
 
-  // Categorías y productos
   const [categories, setCategories] = useState([]);
-  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [selectedCategory, setSelectedCategory] =
+    useState(null);
   const [products, setProducts] = useState([]);
 
-  // Identificadores de los productos favoritos
-  const [favorites, setFavorites] = useState([]);
+  const [favoriteIds, setFavoriteIds] = useState([]);
+  const [favoriteProducts, setFavoriteProducts] =
+    useState([]);
 
-  // Estados visuales
   const [loadingStore, setLoadingStore] = useState(true);
-  const [loadingProducts, setLoadingProducts] = useState(false);
+  const [loadingProducts, setLoadingProducts] =
+    useState(false);
   const [error, setError] = useState("");
 
-  // Al abrir la página, carga la tienda y las categorías
   useEffect(() => {
     getStore();
     getCategories();
   }, []);
 
-  // Cargar los favoritos del usuario
   useEffect(() => {
     if (userId) {
       getFavorites();
     } else {
-      setFavorites([]);
+      setFavoriteIds([]);
+      setFavoriteProducts([]);
     }
   }, [userId]);
 
-  // Cargar productos cuando cambia la categoría seleccionada
   useEffect(() => {
     if (selectedCategory?.id) {
       getProductsByCategory(selectedCategory.id);
@@ -82,18 +82,22 @@ export const CustomerHome = () => {
 
       const data = await fetchStore();
 
-      setShopName(data.name || "Shop Name");
+      setShopName(data.name || "MenuStore");
       setShopLogo(data.logo || "");
+
       setShopDescription(
         data.description ||
-        "Explora nuestros productos y servicios disponibles."
+          "Explora nuestros productos y servicios disponibles."
       );
     } catch (error) {
-      console.error("Error al cargar la tienda:", error);
+      console.error(
+        "Error al cargar la tienda:",
+        error
+      );
 
       setError(
         error.message ||
-        "No se pudo cargar la información de la tienda."
+          "No se pudo cargar la información de la tienda."
       );
     } finally {
       setLoadingStore(false);
@@ -121,7 +125,10 @@ export const CustomerHome = () => {
         setProducts([]);
       }
     } catch (error) {
-      console.error("Error al cargar categorías:", error);
+      console.error(
+        "Error al cargar categorías:",
+        error
+      );
 
       setCategories([]);
       setSelectedCategory(null);
@@ -129,7 +136,7 @@ export const CustomerHome = () => {
 
       setError(
         error.message ||
-        "No se pudieron cargar las categorías."
+          "No se pudieron cargar las categorías."
       );
     }
   };
@@ -139,7 +146,8 @@ export const CustomerHome = () => {
       setLoadingProducts(true);
       setError("");
 
-      const data = await fetchProductsByCategory(categoryId);
+      const data =
+        await fetchProductsByCategory(categoryId);
 
       if (!Array.isArray(data)) {
         throw new Error(
@@ -149,13 +157,16 @@ export const CustomerHome = () => {
 
       setProducts(data);
     } catch (error) {
-      console.error("Error al cargar productos:", error);
+      console.error(
+        "Error al cargar productos:",
+        error
+      );
 
       setProducts([]);
 
       setError(
         error.message ||
-        "No se pudieron cargar los productos."
+          "No se pudieron cargar los productos."
       );
     } finally {
       setLoadingProducts(false);
@@ -167,57 +178,76 @@ export const CustomerHome = () => {
       const data = await fetchUserFavorites(userId);
 
       if (!Array.isArray(data)) {
-        console.error(
-          "La respuesta de favoritos no es una lista:",
-          data
-        );
-
-        setFavorites([]);
+        setFavoriteIds([]);
+        setFavoriteProducts([]);
         return;
       }
 
-      const favoriteProductIds = data
+      const ids = data
         .map((favorite) => favorite.product_id)
-        .filter((productId) => productId !== undefined);
+        .filter((id) => id !== undefined);
 
-      setFavorites(favoriteProductIds);
+      setFavoriteIds(ids);
+      setFavoriteProducts(data);
     } catch (error) {
-      console.error("Error al cargar favoritos:", error);
-      setFavorites([]);
+      console.error(
+        "Error al cargar favoritos:",
+        error
+      );
+
+      setFavoriteIds([]);
+      setFavoriteProducts([]);
     }
   };
 
   const toggleFavorite = async (productId) => {
     if (!userId) {
-      alert("Debes iniciar sesión para usar favoritos");
+      alert(
+        "Debes iniciar sesión para usar favoritos"
+      );
       return;
     }
 
-    const productIsFavorite = favorites.includes(productId);
+    const productIsFavorite =
+      favoriteIds.includes(productId);
 
     try {
       if (productIsFavorite) {
-        await fetchDeleteFavorite(userId, productId);
+        await fetchDeleteFavorite(
+          userId,
+          productId
+        );
 
-        setFavorites((currentFavorites) =>
-          currentFavorites.filter(
-            (favoriteId) => favoriteId !== productId
+        setFavoriteIds((currentIds) =>
+          currentIds.filter(
+            (id) => id !== productId
           )
         );
-      } else {
-        await fetchAddFavorite(userId, productId);
 
-        setFavorites((currentFavorites) => [
-          ...currentFavorites,
+        setFavoriteProducts(
+          (currentFavorites) =>
+            currentFavorites.filter(
+              (favorite) =>
+                favorite.product_id !== productId
+            )
+        );
+      } else {
+        await fetchAddFavorite(
+          userId,
           productId
-        ]);
+        );
+
+        await getFavorites();
       }
     } catch (error) {
-      console.error("Error al modificar favoritos:", error);
+      console.error(
+        "Error al modificar favoritos:",
+        error
+      );
 
       alert(
         error.message ||
-        "No se pudo modificar el favorito"
+          "No se pudo modificar el favorito"
       );
     }
   };
@@ -233,7 +263,9 @@ export const CustomerHome = () => {
     try {
       await fetchAddToCart(productId);
 
-      alert("Producto agregado al carrito correctamente");
+      alert(
+        "Producto agregado al carrito correctamente"
+      );
     } catch (error) {
       console.error(
         "Error al agregar producto al carrito:",
@@ -242,7 +274,7 @@ export const CustomerHome = () => {
 
       alert(
         error.message ||
-        "No se pudo agregar el producto al carrito"
+          "No se pudo agregar el producto al carrito"
       );
     }
   };
@@ -251,202 +283,308 @@ export const CustomerHome = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
 
-    setFavorites([]);
+    setFavoriteIds([]);
+    setFavoriteProducts([]);
+  };
+
+  const scrollToProducts = () => {
+    document
+      .getElementById("products-section")
+      ?.scrollIntoView({
+        behavior: "smooth",
+      });
   };
 
   return (
-    <div className="bg-light min-vh-100">
-      <nav className="navbar navbar-dark bg-dark shadow-sm px-4 py-2">
-        <div className="ms-auto d-flex align-items-center gap-2">
-          <MiniUser />
-
+    <div className="store-page">
+      <nav className="navbar store-navbar px-3 px-md-4 py-3">
+        <div className="container-fluid">
           <Link
-            to="/login"
-            className="btn btn-outline-light"
-            onClick={handleLogout}
+            to="/"
+            className="navbar-brand store-navbar-brand"
           >
-            Cerrar sesión
+          
+            {shopName}
           </Link>
+
+          <div className="ms-auto d-flex align-items-center gap-2 gap-md-3">
+            <MiniUser
+              favorites={favoriteProducts}
+              onRemoveFavorite={toggleFavorite}
+            />
+
+            <Link
+              to="/login"
+              className="btn btn-outline-light store-logout-button"
+              onClick={handleLogout}
+            >
+              <i className="fa-solid fa-right-from-bracket me-md-2" />
+
+              <span className="d-none d-md-inline">
+                Cerrar sesión
+              </span>
+            </Link>
+          </div>
         </div>
       </nav>
 
-      <div className="container bg-white shadow rounded my-4 p-0">
-        {/* Información principal de la tienda */}
-        <div className="text-center py-5 px-3 bg-white">
-          {loadingStore ? (
-            <div
-              className="spinner-border text-primary mb-3"
-              role="status"
-            >
-              <span className="visually-hidden">
-                Cargando tienda...
-              </span>
-            </div>
-          ) : (
-            <img
-              src={
-                shopLogo ||
-                "https://placehold.co/200x150?text=Logo"
-              }
-              alt={`Logo de ${shopName}`}
-              className="img-fluid rounded-4 shadow-sm mb-3"
-              style={{
-                width: "190px",
-                height: "150px",
-                objectFit: "cover"
-              }}
-            />
-          )}
+      <main className="container py-4 py-lg-5">
+        <div className="store-shell">
+          <section className="store-hero px-4 px-lg-5 py-5">
+            {loadingStore ? (
+              <div className="w-100 text-center py-5">
+                <div
+                  className="spinner-border"
+                  role="status"
+                  style={{
+                    color: "var(--ms-navy)",
+                    width: "3rem",
+                    height: "3rem",
+                  }}
+                >
+                  <span className="visually-hidden">
+                    Cargando tienda...
+                  </span>
+                </div>
 
-          <h1 className="fw-bold">
-            {shopName}
-          </h1>
-
-          <p className="text-muted mb-0">
-            {shopDescription}
-          </p>
-        </div>
-
-        {/* Botones de categorías */}
-        <div className="bg-dark py-3 px-4 d-flex justify-content-center flex-wrap gap-2">
-          {categories.map((category) => (
-            <button
-              key={category.id}
-              type="button"
-              className={
-                selectedCategory?.id === category.id
-                  ? "btn btn-light border border-primary border-2 text-capitalize"
-                  : "btn btn-light text-capitalize"
-              }
-              onClick={() =>
-                setSelectedCategory(category)
-              }
-            >
-              {category.name}
-            </button>
-          ))}
-        </div>
-
-        <div className="p-4">
-          {error && (
-            <div className="alert alert-danger text-center">
-              {error}
-            </div>
-          )}
-
-          <h4 className="text-capitalize mb-4">
-            {selectedCategory
-              ? selectedCategory.name
-              : "Categorías"}
-          </h4>
-
-          {categories.length === 0 && !error ? (
-            <div className="text-center py-5">
-              <p className="text-muted mb-0">
-                Todavía no hay categorías disponibles.
-              </p>
-            </div>
-          ) : loadingProducts ? (
-            <div className="text-center py-5">
-              <div
-                className="spinner-border text-primary"
-                role="status"
-              >
-                <span className="visually-hidden">
-                  Cargando productos...
-                </span>
+                <p className="text-muted mt-3 mb-0">
+                  Preparando la tienda...
+                </p>
               </div>
-            </div>
-          ) : products.length === 0 ? (
-            <div className="text-center py-5">
-              <p className="text-muted mb-0">
-                No hay productos disponibles en esta categoría.
-              </p>
-            </div>
-          ) : (
-            products.map((product) => (
-              <div
-                key={product.id}
-                className="product-card row align-items-center border rounded-4 shadow-sm mb-4 p-3 bg-white"
-              >
-                <div className="col-md-2">
-                  <img
-                    src={
-                      product.image ||
-                      "https://placehold.co/300x220?text=Producto"
-                    }
-                    alt={product.name}
-                    className="img-fluid rounded-4 shadow-sm"
-                    style={{
-                      width: "220px",
-                      height: "150px",
-                      objectFit: "cover"
-                    }}
-                  />
-                </div>
-
-                <div className="col-md-7">
-                  <span className="badge bg-success text-capitalize mb-2">
-                    {selectedCategory?.name}
+            ) : (
+              <div className="row align-items-center w-100">
+                <div className="col-lg-6">
+                  <span className="store-eyebrow mb-3">
+                    <i className="fa-solid fa-leaf" />
                   </span>
 
-                  <h5 className="fw-bold mb-2">
-                    {product.name}
-                  </h5>
+                  <h1 className="store-title mb-4">
+                    Sabores que
+                    <br />
+                    te encantarán
+                  </h1>
 
-                  <p className="text-muted mb-2">
-                    {product.description || "Sin descripción"}
+                  <p className="store-description mb-4">
+                    {shopDescription}
                   </p>
-
-                  <span className="fs-5 fw-bold text-success">
-                    ${Number(product.price).toFixed(2)}
-                  </span>
-                </div>
-
-                <div className="col-md-3 text-md-end text-start mt-3 mt-md-0">
-                  <div className="fs-6 mb-3">
-                    <span className="me-2">
-                      Añadir a favoritos
-                    </span>
-
-                    <i
-                      className={
-                        favorites.includes(product.id)
-                          ? "fa-solid fa-star text-warning"
-                          : "fa-regular fa-star"
-                      }
-                      style={{ cursor: "pointer" }}
-                      onClick={() =>
-                        toggleFavorite(product.id)
-                      }
-                      title={
-                        favorites.includes(product.id)
-                          ? "Quitar de favoritos"
-                          : "Agregar a favoritos"
-                      }
-                    />
-                  </div>
 
                   <button
                     type="button"
-                    className="btn btn-success rounded-pill px-4"
-                    onClick={() => addToCart(product.id)}
+                    className="store-primary-button"
+                    onClick={scrollToProducts}
                   >
-                    <i className="fa-solid fa-cart-plus me-2" />
-                    Agregar al carrito
+                    Explorar menú
+
+                    <i className="fa-solid fa-arrow-down ms-2" />
                   </button>
                 </div>
-              </div>
-            ))
-          )}
-        </div>
 
-        <footer className="bg-dark text-white text-center py-3 rounded-bottom">
-          <small>
-            © 2026 {shopName} - Todos los derechos reservados
-          </small>
-        </footer>
-      </div>
+                <div className="col-lg-6">
+                  <div className="store-logo-frame">
+                    <img
+                      src={
+                        shopLogo ||
+                        "https://placehold.co/700x550?text=Tu+tienda"
+                      }
+                      alt={`Imagen de ${shopName}`}
+                      className="store-logo"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+          </section>
+
+          <section className="store-categories px-3 px-lg-5 py-4">
+            <div className="d-flex justify-content-center flex-wrap gap-2 gap-md-3">
+              {categories.map((category) => (
+                <button
+                  key={category.id}
+                  type="button"
+                  className={
+                    selectedCategory?.id === category.id
+                      ? "store-category-button active"
+                      : "store-category-button"
+                  }
+                  onClick={() =>
+                    setSelectedCategory(category)
+                  }
+                >
+                  <span className="store-category-icon">
+                    <i className="fa-solid fa-bowl-food" />
+                  </span>
+
+                  <span className="d-block">
+                    {category.name}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </section>
+
+          <section
+            id="products-section"
+            className="px-3 px-lg-5 py-5"
+          >
+            {error && (
+              <div
+                className="alert alert-danger text-center"
+                role="alert"
+              >
+                <i className="fa-solid fa-circle-exclamation me-2" />
+                {error}
+              </div>
+            )}
+
+            <div className="d-flex align-items-end justify-content-between mb-4">
+              <div>
+                <p className="text-muted small mb-1">
+                  Selección especial
+                </p>
+
+                <h2 className="store-section-title text-capitalize mb-0">
+                  {selectedCategory
+                    ? selectedCategory.name
+                    : "Productos"}
+                </h2>
+              </div>
+
+              {selectedCategory && (
+                <span className="store-count-badge">
+                  {products.length} productos
+                </span>
+              )}
+            </div>
+
+            {categories.length === 0 && !error ? (
+              <div className="text-center py-5">
+                <i className="fa-solid fa-layer-group store-empty-icon mb-3" />
+
+                <p className="text-muted mb-0">
+                  Todavía no hay categorías disponibles.
+                </p>
+              </div>
+            ) : loadingProducts ? (
+              <div className="text-center py-5">
+                <div
+                  className="spinner-border"
+                  role="status"
+                  style={{
+                    color: "var(--ms-navy)",
+                  }}
+                >
+                  <span className="visually-hidden">
+                    Cargando productos...
+                  </span>
+                </div>
+
+                <p className="text-muted mt-3 mb-0">
+                  Cargando productos...
+                </p>
+              </div>
+            ) : products.length === 0 ? (
+              <div className="text-center py-5">
+                <i className="fa-solid fa-plate-wheat store-empty-icon mb-3" />
+
+                <p className="text-muted mb-0">
+                  No hay productos disponibles en esta categoría.
+                </p>
+              </div>
+            ) : (
+              <div className="row g-4">
+                {products.map((product) => (
+                  <div
+                    className="col-md-6 col-xl-4"
+                    key={product.id}
+                  >
+                    <article className="store-product-card h-100">
+                      <div className="store-product-image-wrapper">
+                        <img
+                          src={
+                            product.image ||
+                            "https://placehold.co/500x350?text=Producto"
+                          }
+                          alt={product.name}
+                          className="store-product-image"
+                        />
+                      </div>
+
+                      <div className="p-4">
+                        <div className="d-flex justify-content-between align-items-start gap-3 mb-3">
+                          <span className="store-product-category">
+                            {selectedCategory?.name}
+                          </span>
+
+                          <button
+                            type="button"
+                            className="store-favorite-button flex-shrink-0"
+                            onClick={() =>
+                              toggleFavorite(product.id)
+                            }
+                            title={
+                              favoriteIds.includes(product.id)
+                                ? "Quitar de favoritos"
+                                : "Agregar a favoritos"
+                            }
+                            aria-label={
+                              favoriteIds.includes(product.id)
+                                ? "Quitar de favoritos"
+                                : "Agregar a favoritos"
+                            }
+                          >
+                            <i
+                              className={
+                                favoriteIds.includes(product.id)
+                                  ? "fa-solid fa-star"
+                                  : "fa-regular fa-star"
+                              }
+                            />
+                          </button>
+                        </div>
+
+                        <h3 className="store-product-name">
+                          {product.name}
+                        </h3>
+
+                        <p className="store-product-description">
+                          {product.description ||
+                            "Sin descripción"}
+                        </p>
+
+                        <div className="d-flex align-items-center justify-content-between gap-3 mt-4">
+                          <span className="store-product-price">
+                            $
+                            {Number(
+                              product.price
+                            ).toFixed(2)}
+                          </span>
+
+                          <button
+                            type="button"
+                            className="store-cart-button"
+                            onClick={() =>
+                              addToCart(product.id)
+                            }
+                          >
+                            <i className="fa-solid fa-cart-plus me-2" />
+                            Agregar
+                          </button>
+                        </div>
+                      </div>
+                    </article>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+
+          <footer className="store-footer text-center px-3 py-4">
+            <small>
+              © 2026 {shopName}. Todos los derechos reservados.
+            </small>
+          </footer>
+        </div>
+      </main>
     </div>
   );
 };
