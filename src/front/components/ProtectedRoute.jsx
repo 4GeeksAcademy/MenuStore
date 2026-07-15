@@ -29,6 +29,15 @@ const ProtectedRoute = () => {
     );
   }
 
+  if (user.role === "admin") {
+    return (
+      <Navigate
+        to="/admin-shop"
+        replace
+      />
+    );
+  }
+
   return <Outlet />;
 };
 

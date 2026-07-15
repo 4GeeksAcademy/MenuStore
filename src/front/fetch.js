@@ -1,6 +1,6 @@
 // const urlApi = "https://animated-memory-5g4qw67xgjjrh44xp-3001.app.github.dev/api" //
 
-const urlApi = `${import.meta.env.VITE_BACKEND_URL}/api`; 
+const urlApi = `${import.meta.env.VITE_BACKEND_URL}/api`;
 
 export const fetchRegister = async (userData) => {
   try {
@@ -19,7 +19,6 @@ export const fetchRegister = async (userData) => {
     }
     console.log("Registro exitoso:", data);
     return data;
-
   } catch (error) {
     console.error("Error al registrar usuario:", error);
     throw error;
@@ -106,6 +105,29 @@ export const fetchStore = async () => {
     return data;
   } catch (error) {
     console.error("Error al obtener la tienda:", error);
+    throw error;
+  }
+};
+
+export const fetchCreateStore = async (storeData) => {
+  try {
+    const response = await fetch(`${urlApi}/store`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(storeData),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || "Error al crear la tienda");
+    }
+
+    return data;
+  } catch (error) {
+    console.error("Error al crear la tienda:", error);
     throw error;
   }
 };
@@ -561,6 +583,62 @@ export const fetchUserOrders = async () => {
   } catch (error) {
     console.error("Error al obtener el historial de pedidos:", error);
 
+    throw error;
+  }
+};
+
+export const fetchStoreOrders = async () => {
+  try {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(`${urlApi}/store/orders`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data.error ||
+          data.msg ||
+          "No se pudieron obtener las órdenes del negocio",
+      );
+    }
+
+    return data;
+  } catch (error) {
+    console.error("Error al obtener las órdenes del negocio:", error);
+    throw error;
+  }
+};
+
+export const fetchUpdateOrderStatus = async (orderId, status) => {
+  try {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(`${urlApi}/store/orders/${orderId}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ status }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data.error || data.msg || "No se pudo actualizar el estado del pedido",
+      );
+    }
+
+    return data;
+  } catch (error) {
+    console.error("Error al actualizar el estado del pedido:", error);
     throw error;
   }
 };

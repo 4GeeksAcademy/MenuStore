@@ -23,7 +23,7 @@ const AdminRoute = () => {
   if (!token || !user) {
     return (
       <Navigate
-        to="/login"
+        to="/admin-login"
         replace
       />
     );

@@ -1,18 +1,21 @@
 import React, { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 
 import {
   fetchProductsByCategory,
   fetchCreateProduct,
   fetchUpdateProduct,
   fetchDeleteProduct,
-  fetchUploadImage
+  fetchUploadImage,
+  fetchCategories,
 } from "../fetch.js";
 
 export const ProductManager = () => {
   const { categoryId } = useParams();
+  const navigate = useNavigate();
 
   const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
 
   const [productName, setProductName] = useState("");
   const [productImage, setProductImage] = useState("");
@@ -21,12 +24,39 @@ export const ProductManager = () => {
 
   const [editingId, setEditingId] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [currentCategoryName, setCurrentCategoryName] = useState("");
 
   const [uploadingImage, setUploadingImage] = useState(false);
 
   useEffect(() => {
+    getCategories();
     getProducts();
+    getCategoryName();
   }, [categoryId]);
+
+  const getCategories = async () => {
+    try {
+      const data = await fetchCategories();
+      setCategories(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error("Error al cargar categorías:", error);
+      setCategories([]);
+    }
+  };
+
+  const getCategoryName = async () => {
+    try {
+      const categories = await fetchCategories();
+      const selectedCategory = categories.find(
+        (category) => String(category.id) === String(categoryId)
+      );
+
+      setCurrentCategoryName(selectedCategory?.name || "Categoría");
+    } catch (error) {
+      console.error("Error al cargar la categoría:", error);
+      setCurrentCategoryName("Categoría");
+    }
+  };
 
   const getProducts = async () => {
     try {
@@ -50,6 +80,16 @@ export const ProductManager = () => {
     setProductPrice("");
     setProductDetails("");
     setEditingId(null);
+  };
+
+  const handleCategoryChange = (event) => {
+    const nextCategoryId = event.target.value;
+
+    if (!nextCategoryId) {
+      return;
+    }
+
+    navigate(`/product-manager/${nextCategoryId}`);
   };
 
   const uploadProductImage = async (event) => {
@@ -199,7 +239,7 @@ export const ProductManager = () => {
           </h1>
 
           <p className="text-muted mb-0">
-            Categoría #{categoryId}
+            {currentCategoryName || "Categoría"}
           </p>
         </div>
 
@@ -214,6 +254,28 @@ export const ProductManager = () => {
                 ? "Editar producto"
                 : "Agregar nuevo producto"}
             </h5>
+
+            <div className="mb-3">
+              <label className="form-label">
+                Categoría del producto
+              </label>
+
+              <select
+                className="form-select"
+                value={categoryId || ""}
+                onChange={handleCategoryChange}
+              >
+                <option value="">
+                  Selecciona una categoría
+                </option>
+
+                {categories.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.name}
+                  </option>
+                ))}
+              </select>
+            </div>
 
             <div className="mb-3">
               <label className="form-label">
@@ -354,7 +416,7 @@ export const ProductManager = () => {
 
                 <div className="col-md-6">
                   <span className="badge bg-success mb-2">
-                    Categoría #{categoryId}
+                    {currentCategoryName || "Categoría"}
                   </span>
 
                   <h5 className="fw-bold mb-1">

@@ -760,13 +760,90 @@ def update_store():
 
 
 # =========================================================
-# ORDENES
+# ORDENES TIENDA
 # =========================================================
 
-@api.route("/store/orders")
+@api.route("/store/orders", methods=["GET"])
 @jwt_required()
 def get_orders():
-    pass
+    current_user_id = int(get_jwt_identity())
+    current_user = db.session.get(User, current_user_id)
+
+    if current_user is None:
+        return jsonify({
+            "error": "Usuario no encontrado"
+        }), 404
+
+    if current_user.role != "admin":
+        return jsonify({
+            "error": "No autorizado"
+        }), 403
+
+    orders = (
+        db.session.execute(
+            db.select(Order)
+            .order_by(Order.date.desc())
+        )
+        .unique()
+        .scalars()
+        .all()
+    )
+
+    return jsonify([
+        order.serialize()
+        for order in orders
+    ]), 200
+
+
+@api.route("/store/orders/<int:order_id>", methods=["PUT"])
+@jwt_required()
+def update_store_order(order_id):
+    current_user_id = int(get_jwt_identity())
+    current_user = db.session.get(User, current_user_id)
+
+    if current_user is None:
+        return jsonify({
+            "error": "Usuario no encontrado"
+        }), 404
+
+    if current_user.role != "admin":
+        return jsonify({
+            "error": "No autorizado"
+        }), 403
+
+    data = request.get_json()
+
+    if not data:
+        return jsonify({
+            "error": "No enviaste datos"
+        }), 400
+
+    order = db.session.get(Order, order_id)
+
+    if order is None:
+        return jsonify({
+            "error": "Pedido no encontrado"
+        }), 404
+
+    new_status = data.get("status")
+
+    if new_status not in {"pending", "completed", "cancelled"}:
+        return jsonify({
+            "error": "Estado de pedido inválido"
+        }), 400
+
+    order.status = new_status
+
+    try:
+        db.session.commit()
+    except Exception as error:
+        db.session.rollback()
+        print("Error al actualizar pedido:", error)
+        return jsonify({
+            "error": "No se pudo actualizar el pedido"
+        }), 500
+
+    return jsonify(order.serialize()), 200
 
 
 # =========================================================

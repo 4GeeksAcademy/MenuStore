@@ -21,7 +21,8 @@ class User(db.Model):
     is_active: Mapped[bool] = mapped_column(
         Boolean(), nullable=False, default=True)
 
-    cart: Mapped["Cart | None"] = relationship(back_populates="user", uselist=False, lazy="joined")
+    cart: Mapped["Cart | None"] = relationship(
+        back_populates="user", uselist=False, lazy="joined")
 
     def serialize(self):
         return {
@@ -100,7 +101,8 @@ class Product(db.Model):
             "image": self.image,
             "category_id": self.category_id
         }
-    
+
+
 class Favorite(db.Model):
     __tablename__ = "favorite"
 
@@ -136,7 +138,6 @@ class Favorite(db.Model):
         }
 
 
-
 class Cart(db.Model):
     __tablename__ = 'cart'
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -165,7 +166,8 @@ class Cart_Items(db.Model):
         ForeignKey("product.id"), nullable=False)
 
     cart: Mapped["Cart"] = relationship(back_populates="cart_items")
-    product: Mapped["Product"] = relationship(back_populates="cart_items", lazy="joined")
+    product: Mapped["Product"] = relationship(
+        back_populates="cart_items", lazy="joined")
 
     def serialize(self):
         return {
@@ -197,9 +199,11 @@ class Order(db.Model):
         return {
             "id": self.id,
             "user_id": self.user_id,
+            "user_name": self.user.name if self.user else None,
+            "user_email": self.user.email if self.user else None,
             "total_amount": self.total_amount,
             "status": self.status,
-            "date": self.date.strftime("%Y-%m-%d %H:%M:%S")if self.date else None,
+            "date": self.date.strftime("%Y-%m-%d %H:%M:%S") if self.date else None,
             "order_items": [item.serialize() for item in self.order_items]
         }
 
@@ -230,4 +234,3 @@ class Order_Items(db.Model):
             "product_name": self.product.name if self.product else "Producto ya no disponible",
             "product_image": self.product.image if self.product else None
         }
-    

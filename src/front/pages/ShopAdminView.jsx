@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 
 import {
   fetchStore,
+  fetchCreateStore,
   fetchUpdateStore,
   fetchCategories,
   fetchCreateCategory,
@@ -14,10 +15,12 @@ const ShopAdminView = () => {
   const navigate = useNavigate();
 
   const [shopName, setShopName] = useState("");
+  const [shopDescription, setShopDescription] = useState("");
   const [categoryName, setCategoryName] = useState("");
   const [categories, setCategories] = useState([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState("");
   const [shopLogo, setShopLogo] = useState("");
+  const [storeExists, setStoreExists] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
 
   useEffect(() => {
@@ -29,10 +32,18 @@ const ShopAdminView = () => {
     try {
       const data = await fetchStore();
 
+      setStoreExists(true);
       setShopName(data.name || "");
       setShopLogo(data.logo || "");
+      setShopDescription(data.description || "");
     } catch (error) {
       console.error("Error al cargar la tienda:", error);
+
+      if (error.message?.includes("No existe ninguna tienda")) {
+        setStoreExists(false);
+        return;
+      }
+
       alert(error.message || "No se pudo cargar la tienda");
     }
   };
@@ -54,6 +65,30 @@ const ShopAdminView = () => {
     }
   };
 
+  const saveStoreData = async (payload) => {
+    const storePayload = {
+      name: shopName.trim() || "MenuStore",
+      description: shopDescription.trim(),
+      logo: shopLogo,
+      ...payload,
+    };
+
+    if (storeExists) {
+      const data = await fetchUpdateStore(storePayload);
+      setShopName(data.name || shopName);
+      setShopLogo(data.logo || shopLogo);
+      setShopDescription(data.description || shopDescription);
+      return data;
+    }
+
+    const data = await fetchCreateStore(storePayload);
+    setStoreExists(true);
+    setShopName(data.name || shopName);
+    setShopLogo(data.logo || shopLogo);
+    setShopDescription(data.description || shopDescription);
+    return data;
+  };
+
   const uploadShopLogo = async (event) => {
     const file = event.target.files?.[0];
 
@@ -64,7 +99,7 @@ const ShopAdminView = () => {
 
       const imageUrl = await fetchUploadImage(file);
 
-      const updatedStore = await fetchUpdateStore({
+      const updatedStore = await saveStoreData({
         logo: imageUrl
       });
 
@@ -91,16 +126,27 @@ const ShopAdminView = () => {
     }
 
     try {
-      const data = await fetchUpdateStore({
+      await saveStoreData({
         name: shopName.trim()
       });
-
-      setShopName(data.name || shopName);
 
       alert("Nombre guardado correctamente");
     } catch (error) {
       console.error("Error al guardar el nombre:", error);
       alert(error.message || "No se pudo guardar el nombre");
+    }
+  };
+
+  const saveShopDescription = async () => {
+    try {
+      await saveStoreData({
+        description: shopDescription.trim()
+      });
+
+      alert("Descripción guardada correctamente");
+    } catch (error) {
+      console.error("Error al guardar la descripción:", error);
+      alert(error.message || "No se pudo guardar la descripción");
     }
   };
 
@@ -158,8 +204,10 @@ const ShopAdminView = () => {
     }
   };
 
-  const goBack = () => {
-    navigate("/");
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    navigate("/admin-login");
   };
 
   return (
@@ -171,9 +219,9 @@ const ShopAdminView = () => {
 
         <button
           className="btn btn-outline-light"
-          onClick={goBack}
+          onClick={handleLogout}
         >
-          Ir a tienda
+          Cerrar sesión
         </button>
       </nav>
 
@@ -263,6 +311,36 @@ const ShopAdminView = () => {
                 onClick={saveShopName}
               >
                 Save Name
+              </button>
+            </div>
+          </div>
+
+          <div className="row align-items-center border rounded-4 shadow-sm mb-4 p-3 bg-white">
+            <div className="col-md-8">
+              <span className="badge bg-info text-dark mb-2">
+                Descripción
+              </span>
+
+              <h5 className="fw-bold mb-2">
+                Descripción de la tienda
+              </h5>
+
+              <textarea
+                className="form-control"
+                rows="3"
+                placeholder="Descripción de la tienda"
+                value={shopDescription}
+                onChange={(e) => setShopDescription(e.target.value)}
+              />
+            </div>
+
+            <div className="col-md-4 text-md-end mt-3 mt-md-0">
+              <button
+                type="button"
+                className="btn btn-primary rounded-pill px-4"
+                onClick={saveShopDescription}
+              >
+                Save Description
               </button>
             </div>
           </div>
@@ -363,6 +441,31 @@ const ShopAdminView = () => {
                 }}
               >
                 Edit Products
+              </Link>
+            </div>
+          </div>
+
+          <div className="row align-items-center border rounded-4 shadow-sm mb-4 p-3 bg-white">
+            <div className="col-md-8">
+              <span className="badge bg-secondary mb-2">
+                Pedidos
+              </span>
+
+              <h5 className="fw-bold mb-2">
+                Ordenes de clientes
+              </h5>
+
+              <p className="text-muted mb-0">
+                Revisa los pedidos que llegan desde los usuarios y procesa su estado.
+              </p>
+            </div>
+
+            <div className="col-md-4 text-md-end mt-3 mt-md-0">
+              <Link
+                to="/admin-orders"
+                className="btn btn-primary rounded-pill px-4"
+              >
+                Ver pedidos
               </Link>
             </div>
           </div>

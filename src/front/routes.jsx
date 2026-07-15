@@ -16,6 +16,7 @@ import ShoppingCart from "./pages/ShoppingCart";
 import Orders from "./pages/Orders";
 import OrderDetail from "./pages/OrderDetail";
 import OrderSuccess from "./pages/OrderSuccess";
+import ShopOrders from "./pages/ShopOrders";
 
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminRoute from "./components/AdminRoute";
@@ -86,6 +87,11 @@ export const router = createBrowserRouter(
         <Route
           path="admin-shop"
           element={<ShopAdminView />}
+        />
+
+        <Route
+          path="admin-orders"
+          element={<ShopOrders />}
         />
 
         <Route
