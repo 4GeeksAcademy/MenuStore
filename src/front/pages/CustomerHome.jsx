@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+
 import MiniUser from "./MiniUser";
+import useGlobalReducer from "../hooks/useGlobalReducer.jsx";
 
 import {
   fetchStore,
@@ -10,9 +12,13 @@ import {
   fetchAddFavorite,
   fetchDeleteFavorite,
   fetchAddToCart,
+  fetchUserCart,
 } from "../fetch.js";
 
 export const CustomerHome = () => {
+  const { dispatch } = useGlobalReducer();
+
+  // Usuario guardado en localStorage
   const savedUser = localStorage.getItem("user");
 
   let loggedUser = null;
@@ -33,48 +39,35 @@ export const CustomerHome = () => {
 
   const userId = loggedUser?.id;
 
-  const [shopName, setShopName] = useState("MenuStore");
+  // Información general de la tienda
+  const [shopName, setShopName] =
+    useState("MenuStore");
   const [shopLogo, setShopLogo] = useState("");
-  const [shopDescription, setShopDescription] = useState(
-    "Explora nuestros productos y servicios disponibles."
-  );
+  const [shopDescription, setShopDescription] =
+    useState(
+      "Explora nuestros productos y servicios disponibles."
+    );
 
+  // Categorías y productos
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] =
     useState(null);
   const [products, setProducts] = useState([]);
 
-  const [favoriteIds, setFavoriteIds] = useState([]);
+  // Favoritos
+  const [favoriteIds, setFavoriteIds] =
+    useState([]);
   const [favoriteProducts, setFavoriteProducts] =
     useState([]);
 
-  const [loadingStore, setLoadingStore] = useState(true);
+  // Estados visuales
+  const [loadingStore, setLoadingStore] =
+    useState(true);
   const [loadingProducts, setLoadingProducts] =
     useState(false);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    getStore();
-    getCategories();
-  }, []);
-
-  useEffect(() => {
-    if (userId) {
-      getFavorites();
-    } else {
-      setFavoriteIds([]);
-      setFavoriteProducts([]);
-    }
-  }, [userId]);
-
-  useEffect(() => {
-    if (selectedCategory?.id) {
-      getProductsByCategory(selectedCategory.id);
-    } else {
-      setProducts([]);
-    }
-  }, [selectedCategory]);
-
+  // Cargar información de la tienda
   const getStore = async () => {
     try {
       setLoadingStore(true);
@@ -104,6 +97,7 @@ export const CustomerHome = () => {
     }
   };
 
+  // Cargar categorías
   const getCategories = async () => {
     try {
       setError("");
@@ -141,7 +135,10 @@ export const CustomerHome = () => {
     }
   };
 
-  const getProductsByCategory = async (categoryId) => {
+  // Cargar productos de una categoría
+  const getProductsByCategory = async (
+    categoryId
+  ) => {
     try {
       setLoadingProducts(true);
       setError("");
@@ -173,22 +170,53 @@ export const CustomerHome = () => {
     }
   };
 
+  // Cargar favoritos del usuario
   const getFavorites = async () => {
+    if (!userId) {
+      setFavoriteIds([]);
+      setFavoriteProducts([]);
+
+      dispatch({
+        type: "SET_FAVORITES",
+        payload: [],
+      });
+
+      return;
+    }
+
     try {
-      const data = await fetchUserFavorites(userId);
+      const data =
+        await fetchUserFavorites(userId);
 
       if (!Array.isArray(data)) {
         setFavoriteIds([]);
         setFavoriteProducts([]);
+
+        dispatch({
+          type: "SET_FAVORITES",
+          payload: [],
+        });
+
         return;
       }
 
       const ids = data
-        .map((favorite) => favorite.product_id)
-        .filter((id) => id !== undefined);
+        .map(
+          (favorite) => favorite.product_id
+        )
+        .filter(
+          (productId) =>
+            productId !== undefined &&
+            productId !== null
+        );
 
       setFavoriteIds(ids);
       setFavoriteProducts(data);
+
+      dispatch({
+        type: "SET_FAVORITES",
+        payload: data,
+      });
     } catch (error) {
       console.error(
         "Error al cargar favoritos:",
@@ -197,9 +225,44 @@ export const CustomerHome = () => {
 
       setFavoriteIds([]);
       setFavoriteProducts([]);
+
+      dispatch({
+        type: "SET_FAVORITES",
+        payload: [],
+      });
     }
   };
 
+  // Sincronizar carrito con el store global
+  const syncCart = async () => {
+    if (!userId) {
+      dispatch({
+        type: "CLEAR_CART",
+      });
+
+      return;
+    }
+
+    try {
+      const data = await fetchUserCart(userId);
+
+      dispatch({
+        type: "SET_CART_ITEMS",
+        payload: data.cart_items || [],
+      });
+    } catch (error) {
+      console.error(
+        "Error al sincronizar el carrito:",
+        error
+      );
+
+      dispatch({
+        type: "CLEAR_CART",
+      });
+    }
+  };
+
+  // Agregar o quitar favorito
   const toggleFavorite = async (productId) => {
     if (!userId) {
       alert(
@@ -228,15 +291,23 @@ export const CustomerHome = () => {
           (currentFavorites) =>
             currentFavorites.filter(
               (favorite) =>
-                favorite.product_id !== productId
+                favorite.product_id !==
+                productId
             )
         );
+
+        dispatch({
+          type: "REMOVE_FAVORITE",
+          payload: productId,
+        });
       } else {
         await fetchAddFavorite(
           userId,
           productId
         );
 
+        // Volvemos a cargar para obtener
+        // toda la información del favorito
         await getFavorites();
       }
     } catch (error) {
@@ -252,6 +323,7 @@ export const CustomerHome = () => {
     }
   };
 
+  // Agregar producto al carrito
   const addToCart = async (productId) => {
     if (!userId) {
       alert(
@@ -262,6 +334,10 @@ export const CustomerHome = () => {
 
     try {
       await fetchAddToCart(productId);
+
+      // Actualiza inmediatamente el contador
+      // del carrito en MiniUser
+      await syncCart();
 
       alert(
         "Producto agregado al carrito correctamente"
@@ -279,14 +355,20 @@ export const CustomerHome = () => {
     }
   };
 
+  // Cerrar sesión
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
 
     setFavoriteIds([]);
     setFavoriteProducts([]);
+
+    dispatch({
+      type: "LOGOUT",
+    });
   };
 
+  // Bajar suavemente hasta los productos
   const scrollToProducts = () => {
     document
       .getElementById("products-section")
@@ -294,6 +376,43 @@ export const CustomerHome = () => {
         behavior: "smooth",
       });
   };
+
+  // Cargar tienda y categorías una sola vez
+  useEffect(() => {
+    getStore();
+    getCategories();
+  }, []);
+
+  // Sincronizar datos relacionados con el usuario
+  useEffect(() => {
+    if (userId) {
+      getFavorites();
+      syncCart();
+    } else {
+      setFavoriteIds([]);
+      setFavoriteProducts([]);
+
+      dispatch({
+        type: "SET_FAVORITES",
+        payload: [],
+      });
+
+      dispatch({
+        type: "CLEAR_CART",
+      });
+    }
+  }, [userId]);
+
+  // Cargar productos al cambiar de categoría
+  useEffect(() => {
+    if (selectedCategory?.id) {
+      getProductsByCategory(
+        selectedCategory.id
+      );
+    } else {
+      setProducts([]);
+    }
+  }, [selectedCategory]);
 
   return (
     <div className="store-page">
@@ -303,7 +422,6 @@ export const CustomerHome = () => {
             to="/"
             className="navbar-brand store-navbar-brand"
           >
-          
             {shopName}
           </Link>
 
@@ -402,7 +520,8 @@ export const CustomerHome = () => {
                   key={category.id}
                   type="button"
                   className={
-                    selectedCategory?.id === category.id
+                    selectedCategory?.id ===
+                    category.id
                       ? "store-category-button active"
                       : "store-category-button"
                   }
@@ -456,7 +575,8 @@ export const CustomerHome = () => {
               )}
             </div>
 
-            {categories.length === 0 && !error ? (
+            {categories.length === 0 &&
+            !error ? (
               <div className="text-center py-5">
                 <i className="fa-solid fa-layer-group store-empty-icon mb-3" />
 
@@ -512,29 +632,39 @@ export const CustomerHome = () => {
                       <div className="p-4">
                         <div className="d-flex justify-content-between align-items-start gap-3 mb-3">
                           <span className="store-product-category">
-                            {selectedCategory?.name}
+                            {
+                              selectedCategory?.name
+                            }
                           </span>
 
                           <button
                             type="button"
                             className="store-favorite-button flex-shrink-0"
                             onClick={() =>
-                              toggleFavorite(product.id)
+                              toggleFavorite(
+                                product.id
+                              )
                             }
                             title={
-                              favoriteIds.includes(product.id)
+                              favoriteIds.includes(
+                                product.id
+                              )
                                 ? "Quitar de favoritos"
                                 : "Agregar a favoritos"
                             }
                             aria-label={
-                              favoriteIds.includes(product.id)
+                              favoriteIds.includes(
+                                product.id
+                              )
                                 ? "Quitar de favoritos"
                                 : "Agregar a favoritos"
                             }
                           >
                             <i
                               className={
-                                favoriteIds.includes(product.id)
+                                favoriteIds.includes(
+                                  product.id
+                                )
                                   ? "fa-solid fa-star"
                                   : "fa-regular fa-star"
                               }
