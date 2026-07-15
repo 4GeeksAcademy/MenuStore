@@ -1,9 +1,12 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { fetchLogin } from "../fetch.js";
+import useGlobalReducer from "../hooks/useGlobalReducer.jsx";
 
 export const Login = () => {
   const navigate = useNavigate();
+
+  const { dispatch } = useGlobalReducer();
 
   const [inputData, setInputData] = useState({
     email: "",

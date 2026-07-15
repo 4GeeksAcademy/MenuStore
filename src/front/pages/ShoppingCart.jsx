@@ -1,6 +1,8 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 
+import useGlobalReducer from "../hooks/useGlobalReducer.jsx";
+
 import {
   fetchUserCart,
   fetchUpdateCartQuantity,
@@ -12,7 +14,12 @@ const ProductItem = ({
   item,
   onQuantityChange,
   onRemove,
+  isUpdating,
 }) => {
+  const productId = item.product.id;
+  const productName = item.product.name;
+  const quantity = Number(item.quantity);
+
   return (
     <div className="ms-cart-item row align-items-center mx-0">
       <div className="col-md-2 text-center text-md-start">
@@ -21,18 +28,19 @@ const ProductItem = ({
             item.product.image ||
             "https://placehold.co/120x90"
           }
-          alt={item.product.name}
+          alt={productName}
           className="ms-cart-image"
         />
       </div>
 
       <div className="col-md-4 mt-3 mt-md-0">
         <h5 className="ms-cart-product-name mb-2">
-          {item.product.name}
+          {productName}
         </h5>
 
         <p className="ms-cart-description small mb-0">
-          {item.product.description || "Sin descripción"}
+          {item.product.description ||
+            "Sin descripción"}
         </p>
       </div>
 
@@ -42,18 +50,32 @@ const ProductItem = ({
           className="ms-quantity-button"
           onClick={() =>
             onQuantityChange(
-              item.product.id,
-              Math.max(1, item.quantity - 1)
+              productId,
+              Math.max(1, quantity - 1)
             )
           }
-          disabled={item.quantity === 1}
-          aria-label={`Disminuir cantidad de ${item.product.name}`}
+          disabled={
+            quantity === 1 ||
+            isUpdating
+          }
+          aria-label={`Disminuir cantidad de ${productName}`}
         >
           −
         </button>
 
-        <span className="fs-5 fw-bold">
-          {item.quantity}
+        <span
+          className="fs-5 fw-bold d-inline-flex justify-content-center align-items-center"
+          style={{ minWidth: "30px" }}
+        >
+          {isUpdating ? (
+            <span
+              className="spinner-border spinner-border-sm"
+              role="status"
+              aria-label="Actualizando cantidad"
+            />
+          ) : (
+            quantity
+          )}
         </span>
 
         <button
@@ -61,11 +83,12 @@ const ProductItem = ({
           className="ms-quantity-button"
           onClick={() =>
             onQuantityChange(
-              item.product.id,
-              item.quantity + 1
+              productId,
+              quantity + 1
             )
           }
-          aria-label={`Aumentar cantidad de ${item.product.name}`}
+          disabled={isUpdating}
+          aria-label={`Aumentar cantidad de ${productName}`}
         >
           +
         </button>
@@ -76,19 +99,30 @@ const ProductItem = ({
           $
           {(
             Number(item.product.price) *
-            Number(item.quantity)
+            quantity
           ).toFixed(2)}
         </span>
 
         <button
           type="button"
           className="btn ms-danger-button btn-sm px-3"
-          onClick={() =>
-            onRemove(item.product.id)
-          }
+          onClick={() => onRemove(productId)}
+          disabled={isUpdating}
         >
-          <i className="fa-regular fa-trash-can me-2" />
-          Eliminar
+          {isUpdating ? (
+            <>
+              <span
+                className="spinner-border spinner-border-sm me-2"
+                aria-hidden="true"
+              />
+              Actualizando...
+            </>
+          ) : (
+            <>
+              <i className="fa-regular fa-trash-can me-2" />
+              Eliminar
+            </>
+          )}
         </button>
       </div>
     </div>
@@ -97,14 +131,20 @@ const ProductItem = ({
 
 const ShoppingCart = () => {
   const navigate = useNavigate();
+  const { dispatch } = useGlobalReducer();
 
   const [cartItems, setCartItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
   const [processingPayment, setProcessingPayment] =
     useState(false);
+
   const [clearingCart, setClearingCart] =
     useState(false);
+
+  const [updatingProductId, setUpdatingProductId] =
+    useState(null);
 
   const savedUser = localStorage.getItem("user");
 
@@ -131,6 +171,13 @@ const ShoppingCart = () => {
       setError(
         "Debes iniciar sesión para ver el carrito"
       );
+
+      setCartItems([]);
+
+      dispatch({
+        type: "CLEAR_CART",
+      });
+
       setLoading(false);
       return;
     }
@@ -141,7 +188,28 @@ const ShoppingCart = () => {
 
       const data = await fetchUserCart(userId);
 
-      setCartItems(data.cart_items || []);
+      const receivedItems = Array.isArray(
+        data.cart_items
+      )
+        ? data.cart_items
+        : [];
+
+      /*
+       * Ordenamos una sola vez al cargar.
+       * El ID de Cart_Items mantiene un orden estable.
+       */
+      const orderedItems = [...receivedItems].sort(
+        (firstItem, secondItem) =>
+          Number(firstItem.id) -
+          Number(secondItem.id)
+      );
+
+      setCartItems(orderedItems);
+
+      dispatch({
+        type: "SET_CART_ITEMS",
+        payload: orderedItems,
+      });
     } catch (error) {
       console.error(
         "Error al cargar el carrito:",
@@ -154,6 +222,10 @@ const ShoppingCart = () => {
       );
 
       setCartItems([]);
+
+      dispatch({
+        type: "CLEAR_CART",
+      });
     } finally {
       setLoading(false);
     }
@@ -167,7 +239,16 @@ const ShoppingCart = () => {
     productId,
     newQuantity
   ) => {
+    /*
+     * Evita enviar dos solicitudes simultáneas
+     * para el mismo producto.
+     */
+    if (updatingProductId === productId) {
+      return;
+    }
+
     try {
+      setUpdatingProductId(productId);
       setError("");
 
       await fetchUpdateCartQuantity(
@@ -175,7 +256,29 @@ const ShoppingCart = () => {
         newQuantity
       );
 
-      await loadCart();
+      /*
+       * Actualizamos únicamente el producto afectado.
+       * Ya no llamamos loadCart(), por lo que los
+       * productos no cambian de posición.
+       */
+      setCartItems((currentItems) =>
+        currentItems.map((item) =>
+          item.product.id === productId
+            ? {
+                ...item,
+                quantity: newQuantity,
+              }
+            : item
+        )
+      );
+
+      dispatch({
+        type: "UPDATE_CART_ITEM_QUANTITY",
+        payload: {
+          productId,
+          quantity: newQuantity,
+        },
+      });
     } catch (error) {
       console.error(
         "Error al actualizar cantidad:",
@@ -186,16 +289,40 @@ const ShoppingCart = () => {
         error.message ||
           "No se pudo actualizar la cantidad"
       );
+    } finally {
+      setUpdatingProductId(null);
     }
   };
 
   const handleRemoveItem = async (productId) => {
+    if (updatingProductId === productId) {
+      return;
+    }
+
     try {
+      setUpdatingProductId(productId);
       setError("");
 
-      await fetchUpdateCartQuantity(productId, 0);
+      await fetchUpdateCartQuantity(
+        productId,
+        0
+      );
 
-      await loadCart();
+      /*
+       * Eliminamos únicamente el producto seleccionado.
+       * No recargamos todo el carrito.
+       */
+      setCartItems((currentItems) =>
+        currentItems.filter(
+          (item) =>
+            item.product.id !== productId
+        )
+      );
+
+      dispatch({
+        type: "REMOVE_CART_ITEM",
+        payload: productId,
+      });
     } catch (error) {
       console.error(
         "Error al eliminar producto:",
@@ -206,10 +333,20 @@ const ShoppingCart = () => {
         error.message ||
           "No se pudo eliminar el producto"
       );
+    } finally {
+      setUpdatingProductId(null);
     }
   };
 
   const handleClearCart = async () => {
+    if (
+      clearingCart ||
+      processingPayment ||
+      updatingProductId !== null
+    ) {
+      return;
+    }
+
     try {
       setClearingCart(true);
       setError("");
@@ -217,6 +354,10 @@ const ShoppingCart = () => {
       await fetchClearCart();
 
       setCartItems([]);
+
+      dispatch({
+        type: "CLEAR_CART",
+      });
     } catch (error) {
       console.error(
         "Error al vaciar el carrito:",
@@ -238,13 +379,31 @@ const ShoppingCart = () => {
       return;
     }
 
+    if (
+      processingPayment ||
+      clearingCart ||
+      updatingProductId !== null
+    ) {
+      return;
+    }
+
     try {
       setProcessingPayment(true);
       setError("");
 
       const data = await fetchCheckout();
 
+      if (!data?.order?.id) {
+        throw new Error(
+          "El servidor no devolvió la orden creada"
+        );
+      }
+
       setCartItems([]);
+
+      dispatch({
+        type: "CLEAR_CART",
+      });
 
       navigate(
         `/order-success/${data.order.id}`,
@@ -270,15 +429,17 @@ const ShoppingCart = () => {
   };
 
   const total = cartItems.reduce(
-    (accumulator, item) => {
-      return (
-        accumulator +
-        Number(item.product.price) *
-          Number(item.quantity)
-      );
-    },
+    (accumulator, item) =>
+      accumulator +
+      Number(item.product.price) *
+        Number(item.quantity),
     0
   );
+
+  const cartIsBusy =
+    clearingCart ||
+    processingPayment ||
+    updatingProductId !== null;
 
   return (
     <div className="ms-page">
@@ -379,6 +540,10 @@ const ShoppingCart = () => {
                       onRemove={
                         handleRemoveItem
                       }
+                      isUpdating={
+                        updatingProductId ===
+                        item.product.id
+                      }
                     />
                   ))}
                 </div>
@@ -411,10 +576,7 @@ const ShoppingCart = () => {
                           type="button"
                           className="btn ms-secondary-button"
                           onClick={handleClearCart}
-                          disabled={
-                            clearingCart ||
-                            processingPayment
-                          }
+                          disabled={cartIsBusy}
                         >
                           {clearingCart ? (
                             <>
@@ -436,10 +598,7 @@ const ShoppingCart = () => {
                           type="button"
                           className="ms-checkout-button"
                           onClick={handleCheckout}
-                          disabled={
-                            clearingCart ||
-                            processingPayment
-                          }
+                          disabled={cartIsBusy}
                         >
                           {processingPayment ? (
                             <>
