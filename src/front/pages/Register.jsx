@@ -5,6 +5,8 @@ import { fetchRegister } from "../fetch.js";
 const Register = () => {
   const navigate = useNavigate();
 
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
   const [inputData, setInputData] = useState({
     name: "",
     email: "",
@@ -38,6 +40,8 @@ const Register = () => {
     }
 
     try {
+      setIsSubmitting(true);
+
       await fetchRegister({
         name: inputData.name.trim(),
         email: inputData.email.trim().toLowerCase(),
@@ -51,8 +55,11 @@ const Register = () => {
 
       alert(
         error.message ||
-          "No se pudo registrar el usuario"
+        "No se pudo registrar el usuario"
       );
+    } finally {
+
+      setIsSubmitting(false);
     }
   };
 
@@ -115,6 +122,7 @@ const Register = () => {
           <button
             type="submit"
             className="btn btn-primary w-100"
+            disabled={isSubmitting}
           >
             Registrarse
           </button>

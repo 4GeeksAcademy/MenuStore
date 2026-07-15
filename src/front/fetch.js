@@ -11,21 +11,24 @@ export const fetchRegister = async (userData) => {
       },
       body: JSON.stringify(userData),
     });
+
+    const data = await response.json();
+
     if (!response.ok) {
       throw new Error("Error en la solicitud");
     }
-    const data = await response.json();
     console.log("Registro exitoso:", data);
     return data;
+
   } catch (error) {
     console.error("Error al registrar usuario:", error);
     throw error;
   }
 };
 
-export const fetchUserProfile = async (userId) => {
+export const fetchUserProfile = async () => {
   try {
-    const response = await fetch(`${urlApi}/user/${userId}`, {
+    const response = await fetch(`${urlApi}/user/private`, {
       method: "GET",
       headers: {
         Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -41,6 +44,7 @@ export const fetchUserProfile = async (userId) => {
     return data;
   } catch (error) {
     console.error("Error al obtener el perfil:", error);
+    alert("Hubo un error al obtener el perfil. Inténtalo de nuevo.");
     throw error;
   }
 };
