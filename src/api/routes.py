@@ -26,7 +26,9 @@ from api.models import (
     Product,
     Cart,
     Cart_Items,
-    Favorite
+    Favorite,
+    Order,
+    Order_Items
 )
 
 
@@ -35,10 +37,6 @@ api = Blueprint("api", __name__)
 # Permitir solicitudes CORS a esta API
 CORS(api)
 
-
-# =========================================================
-# USUARIOS
-# =========================================================
 
 @api.route("/admin/users", methods=["GET"])
 def get_users():
@@ -52,24 +50,9 @@ def get_users():
     ), 200
 
 
-@api.route("/user/<int:user_id>", methods=["GET"])
-@jwt_required()
-def get_user(user_id):
-    current_user_id = int(get_jwt_identity())
-
-    if current_user_id != user_id:
-        return jsonify({
-            "error": "No autorizado"
-        }), 403
-
-    user = db.session.get(User, user_id)
-
-    if user is None:
-        return jsonify({
-            "error": "Usuario no encontrado"
-        }), 404
-
-    return jsonify(user.serialize()), 200
+# =========================================================
+# USUARIOS
+# =========================================================
 
 
 @api.route("/user", methods=["POST"])
@@ -691,6 +674,16 @@ def update_store():
 
 
 # =========================================================
+# ORDENES
+# =========================================================
+
+@api.route("/store/orders")
+@jwt_required()
+def get_orders():
+    pass
+
+
+# =========================================================
 # CATEGORÍAS
 # =========================================================
 
@@ -1135,3 +1128,5 @@ def delete_favorite(user_id, product_id):
     return jsonify({
         "message": "Favorito eliminado correctamente"
     }), 200
+
+

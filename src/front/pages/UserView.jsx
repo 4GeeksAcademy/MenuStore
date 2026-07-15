@@ -1,8 +1,15 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { fetchUploadImage, fetchUserProfile } from "../fetch.js";
+import useGlobalReducer from "../hooks/useGlobalReducer";
+import { Link, useNavigate } from 'react-router-dom';
 
-import useGlobalReducer from "../hooks/useGlobalReducer.jsx";
 
 const UserView = () => {
+    const { store, dispatch } = useGlobalReducer();
+    const navigate = useNavigate();
+
+    const [user, setUser] = useState(null)
+    const [loading, setLoading] = useState(true)
 
     const [selectedFile, setSelectedFile] = useState(null);
     const [selectedRole, setSelectedRole] = useState("User");
@@ -11,40 +18,66 @@ const UserView = () => {
         email: "",
 
     });
-    const { store, dispatch } = useGlobalReducer();
 
     const handleFileChange = (e) => {
         setSelectedFile(e.target.files[0]);
     };
 
     const uploadImage = async () => {
-
-        const formData = new FormData();
-        formData.append('file', selectedFile);
-        formData.append("upload_preset", "MenuStore")
+        if (!selectedFile) {
+            alert('Por favor, selecciona una imagen antes de subirla.');
+            return;
+        }
 
         try {
-            const response = await fetch("https://api.cloudinary.com/v1_1/dk0xwtjyr/image/upload", {
-                method: 'POST',
-                body: formData
-            });
+            const image = await fetchUploadImage(selectedFile)
 
-            if (!response.ok) {
-                throw new Error('Error al subir la imagen');
-            }
+            console.log('Imagen subida exitosamente:', image);
+            dispatch({ type: 'USER_IMAGE', payload: image });
 
-            const data = await response.json();
-            console.log('Imagen subida exitosamente:', data);
-            dispatch({ type: 'USER_IMAGE', payload: data.secure_url });
-
+            alert('Imagen subida correctamente');
         } catch (error) {
             console.error('Error al subir la imagen:', error);
             throw error;
         }
 
-        alert('Imagen subida correctamente');
 
     }
+
+    useEffect(() => {
+        const loadData = async () => {
+            try {
+
+                const userData = await fetchUserProfile();
+                setUser(userData.user);
+
+                setInputValues({
+                    username: userData.user?.name || "",
+                    email: userData.user?.email || ""
+                });
+            } catch (error) {
+
+                console.log("No se pudo cargar el perfil:", error.message);
+                localStorage.removeItem("token");
+                navigate("/login");
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        loadData();
+    }, [navigate])
+
+    const handleInputChange = (e) => {
+        const { name, value } = e.target;
+        setInputValues({
+            ...inputValues,
+            [name]: value
+        });
+    };
+
+    if (loading) return <div>Cargando datos...</div>;
+    if (!user) return <div>No se pudo cargar la información del usuario.</div>;
 
     return (
         <div className="container">
@@ -101,8 +134,6 @@ const UserView = () => {
                                     if (selectedFile) {
                                         alert('Subiendo imagen:', selectedFile);
                                         uploadImage()
-                                    } else {
-                                        alert('No se ha seleccionado ninguna imagen.');
                                     }
                                 }}
                             >
@@ -113,7 +144,14 @@ const UserView = () => {
 
                     <div className="row border-bottom py-4 mb-4 justify-content-between align-items-center">
                         <div className="col-auto">
-                            <input type="text" className="form-control" placeholder="Full Name" defaultValue="John Doe" />
+                            <input
+                                type="text"
+                                className="form-control"
+                                name="username"
+                                value={inputValues.username}
+                                onChange={handleInputChange}
+                                placeholder="Full Name"
+                            />
                         </div>
                         <div className="col-auto">
                             <button type="button" className="btn btn-secondary">Save Name</button>
@@ -122,7 +160,14 @@ const UserView = () => {
 
                     <div className="row border-bottom py-4 mb-4 justify-content-between align-items-center">
                         <div className="col-auto">
-                            <input type="email" className="form-control" placeholder="Email Address" defaultValue="johndoe@example.com" />
+                            <input
+                                type="email"
+                                className="form-control"
+                                name="email"
+                                value={inputValues.email}
+                                onChange={handleInputChange}
+                                placeholder="Email Address"
+                            />
                         </div>
                         <div className="col-auto">
                             <button type="button" className="btn btn-secondary">Update Email</button>
@@ -178,7 +223,9 @@ const UserView = () => {
                 </div>
 
                 <div className="card-footer text-body-secondary d-flex justify-content-center py-4">
-                    <button type="button" className="btn btn-secondary px-5 py-3">Back</button>
+                    <Link to="/" type="button" className="btn btn-secondary px-5 py-3">
+                        Back
+                    </Link>
                 </div>
             </div>
         </div>
