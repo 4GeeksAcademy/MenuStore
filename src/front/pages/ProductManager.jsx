@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 
@@ -28,11 +28,17 @@ export const ProductManager = () => {
   const [currentCategoryName, setCurrentCategoryName] = useState("");
 
   const [uploadingImage, setUploadingImage] = useState(false);
+  const requestIdRef = useRef(0);
 
   useEffect(() => {
     getCategories();
-    getProducts();
-    getCategoryName();
+  }, []);
+
+  useEffect(() => {
+    if (categoryId) {
+      getProducts(categoryId);
+      getCategoryName(categoryId);
+    }
   }, [categoryId]);
 
   const getCategories = async () => {
@@ -46,11 +52,10 @@ export const ProductManager = () => {
     }
   };
 
-  const getCategoryName = async () => {
+  const getCategoryName = async (nextCategoryId = categoryId) => {
     try {
-      const categories = await fetchCategories();
       const selectedCategory = categories.find(
-        (category) => String(category.id) === String(categoryId)
+        (category) => String(category.id) === String(nextCategoryId)
       );
 
       setCurrentCategoryName(selectedCategory?.name || "Categoría");
@@ -61,19 +66,32 @@ export const ProductManager = () => {
     }
   };
 
-  const getProducts = async () => {
+  const getProducts = async (nextCategoryId = categoryId) => {
+    const requestId = ++requestIdRef.current;
+
     try {
       setLoading(true);
 
-      const data = await fetchProductsByCategory(categoryId);
+      const data = await fetchProductsByCategory(nextCategoryId);
 
-      setProducts(data);
+      if (requestId !== requestIdRef.current) {
+        return;
+      }
+
+      setProducts(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Error al cargar productos:", error);
+
+      if (requestId !== requestIdRef.current) {
+        return;
+      }
+
       setProducts([]);
       toast.error(error.message || "No se pudieron cargar los productos");
     } finally {
-      setLoading(false);
+      if (requestId === requestIdRef.current) {
+        setLoading(false);
+      }
     }
   };
 
@@ -85,13 +103,14 @@ export const ProductManager = () => {
     setEditingId(null);
   };
 
-  const handleCategoryChange = (event) => {
-    const nextCategoryId = event.target.value;
-
+  const handleCategoryChange = (nextCategoryId, nextCategoryName) => {
     if (!nextCategoryId) {
       return;
     }
 
+    setCurrentCategoryName(nextCategoryName || "Categoría");
+    setProducts([]);
+    setLoading(true);
     navigate(`/product-manager/${nextCategoryId}`);
   };
 
@@ -241,13 +260,45 @@ export const ProductManager = () => {
           <h1 className="fw-bold">
             Administrar productos
           </h1>
-
-          <p className="text-muted mb-0">
-            {currentCategoryName || "Categoría"}
-          </p>
         </div>
 
         <div className="p-4">
+          <div className="row g-3 mb-4">
+            {categories.length > 0 ? (
+              categories.map((item) => {
+                const isActive = String(item.id) === String(categoryId);
+
+                return (
+                  <div key={item.id} className="col-md-4 col-lg-3">
+                    <button
+                      type="button"
+                      className={`w-100 border rounded-4 shadow-sm p-3 text-start ${isActive ? "bg-dark text-white" : "bg-white"}`}
+                      onClick={() => handleCategoryChange(item.id, item.name)}
+                    >
+                      <span className={`badge ${isActive ? "bg-light text-dark" : "bg-success"} mb-2`}>
+                        {isActive ? "Seleccionada" : "Categoría"}
+                      </span>
+
+                      <h6 className="fw-bold mb-1">
+                        {item.name}
+                      </h6>
+
+                      <small className={isActive ? "text-white-50" : "text-muted"}>
+                        Administrar productos
+                      </small>
+                    </button>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="col-12">
+                <div className="border rounded-4 shadow-sm p-4 bg-white text-center text-muted">
+                  No hay categorías disponibles todavía.
+                </div>
+              </div>
+            )}
+          </div>
+
           <div className="border rounded-4 shadow-sm mb-4 p-4 bg-white">
             <span className="badge bg-dark mb-2">
               Producto
@@ -260,25 +311,13 @@ export const ProductManager = () => {
             </h5>
 
             <div className="mb-3">
-              <label className="form-label">
-                Categoría del producto
-              </label>
+              <span className="badge bg-dark mb-2">
+                Categoría activa
+              </span>
 
-              <select
-                className="form-select"
-                value={categoryId || ""}
-                onChange={handleCategoryChange}
-              >
-                <option value="">
-                  Selecciona una categoría
-                </option>
-
-                {categories.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.name}
-                  </option>
-                ))}
-              </select>
+              <div className="border rounded-3 p-3 bg-light">
+                <strong>{currentCategoryName || "Categoría"}</strong>
+              </div>
             </div>
 
             <div className="mb-3">
