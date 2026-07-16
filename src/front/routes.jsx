@@ -25,6 +25,7 @@ export const router = createBrowserRouter(
   createRoutesFromElements(
     <Route
       path="/"
+      element={<Layout />}
       errorElement={
         <div className="container py-5 text-center">
           <h1>Página no encontrada</h1>
@@ -49,37 +50,35 @@ export const router = createBrowserRouter(
 
       {/* Rutas privadas para cualquier usuario autenticado */}
       <Route element={<ProtectedRoute />}>
-        <Route element={<Layout />}>
-          <Route
-            index
-            element={<CustomerHome />}
-          />
+        <Route
+          index
+          element={<CustomerHome />}
+        />
 
-          <Route
-            path="user-view"
-            element={<UserView />}
-          />
+        <Route
+          path="user-view"
+          element={<UserView />}
+        />
 
-          <Route
-            path="shopping-cart"
-            element={<ShoppingCart />}
-          />
+        <Route
+          path="shopping-cart"
+          element={<ShoppingCart />}
+        />
 
-          <Route
-            path="orders"
-            element={<Orders />}
-          />
+        <Route
+          path="orders"
+          element={<Orders />}
+        />
 
-          <Route
-            path="orders/:orderId"
-            element={<OrderDetail />}
-          />
+        <Route
+          path="orders/:orderId"
+          element={<OrderDetail />}
+        />
 
-          <Route
-            path="order-success/:orderId"
-            element={<OrderSuccess />}
-          />
-        </Route>
+        <Route
+          path="order-success/:orderId"
+          element={<OrderSuccess />}
+        />
       </Route>
 
       {/* Rutas solamente para administradores */}

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 
 import {
   fetchStore,
@@ -44,7 +45,7 @@ const ShopAdminView = () => {
         return;
       }
 
-      alert(error.message || "No se pudo cargar la tienda");
+      toast.error(error.message || "No se pudo cargar la tienda");
     }
   };
 
@@ -61,7 +62,7 @@ const ShopAdminView = () => {
       }
     } catch (error) {
       console.error("Error al cargar las categorías:", error);
-      alert(error.message || "No se pudieron cargar las categorías");
+      toast.error(error.message || "No se pudieron cargar las categorías");
     }
   };
 
@@ -105,11 +106,11 @@ const ShopAdminView = () => {
 
       setShopLogo(updatedStore.logo || imageUrl);
 
-      alert("Logo actualizado correctamente");
+      toast.success("Logo actualizado correctamente");
     } catch (error) {
       console.error("Error al subir el logo:", error);
 
-      alert(
+      toast.error(
         error.message ||
         "No se pudo subir el logo"
       );
@@ -121,7 +122,7 @@ const ShopAdminView = () => {
 
   const saveShopName = async () => {
     if (!shopName.trim()) {
-      alert("Escribe el nombre de la tienda");
+      toast.warn("Escribe el nombre de la tienda");
       return;
     }
 
@@ -130,10 +131,10 @@ const ShopAdminView = () => {
         name: shopName.trim()
       });
 
-      alert("Nombre guardado correctamente");
+      toast.success("Nombre guardado correctamente");
     } catch (error) {
       console.error("Error al guardar el nombre:", error);
-      alert(error.message || "No se pudo guardar el nombre");
+      toast.error(error.message || "No se pudo guardar el nombre");
     }
   };
 
@@ -143,10 +144,10 @@ const ShopAdminView = () => {
         description: shopDescription.trim()
       });
 
-      alert("Descripción guardada correctamente");
+      toast.success("Descripción guardada correctamente");
     } catch (error) {
       console.error("Error al guardar la descripción:", error);
-      alert(error.message || "No se pudo guardar la descripción");
+      toast.error(error.message || "No se pudo guardar la descripción");
     }
   };
 
@@ -155,7 +156,7 @@ const ShopAdminView = () => {
     console.log("categoryName:", categoryName);
 
     if (!categoryName.trim()) {
-      alert("Escribe una categoría");
+      toast.warn("Escribe una categoría");
       return;
     }
 
@@ -168,16 +169,16 @@ const ShopAdminView = () => {
       setSelectedCategoryId(data.id);
       setCategoryName("");
 
-      alert("Categoría agregada correctamente");
+      toast.success("Categoría agregada correctamente");
     } catch (error) {
       console.error("Error al crear la categoría:", error);
-      alert(error.message || "No se pudo crear la categoría");
+      toast.error(error.message || "No se pudo crear la categoría");
     }
   };
 
   const deleteCategory = async () => {
     if (!selectedCategoryId) {
-      alert("Selecciona una categoría");
+      toast.warn("Selecciona una categoría");
       return;
     }
 
@@ -197,10 +198,10 @@ const ShopAdminView = () => {
         setSelectedCategoryId("");
       }
 
-      alert("Categoría eliminada correctamente");
+      toast.success("Categoría eliminada correctamente");
     } catch (error) {
       console.error("Error al eliminar la categoría:", error);
-      alert(error.message || "No se pudo eliminar la categoría");
+      toast.error(error.message || "No se pudo eliminar la categoría");
     }
   };
 
@@ -436,7 +437,7 @@ const ShopAdminView = () => {
                 onClick={(e) => {
                   if (!selectedCategoryId) {
                     e.preventDefault();
-                    alert("Selecciona una categoría primero");
+                    toast.warn("Selecciona una categoría primero");
                   }
                 }}
               >

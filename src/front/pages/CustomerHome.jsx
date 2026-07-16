@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import {toast} from 'react-toastify'
+import { toast } from 'react-toastify'
 
 import MiniUser from "./MiniUser";
 import useGlobalReducer from "../hooks/useGlobalReducer.jsx";
@@ -21,7 +21,7 @@ import {
 export const CustomerHome = () => {
   const { dispatch } = useGlobalReducer();
 
-  const {isActive, setIsActive} = useState(false)
+  const { isActive, setIsActive } = useState(false)
 
   // Usuario guardado en localStorage
   const savedUser = localStorage.getItem("user");
@@ -85,7 +85,7 @@ export const CustomerHome = () => {
 
       setShopDescription(
         data.description ||
-          "Explora nuestros productos y servicios disponibles."
+        "Explora nuestros productos y servicios disponibles."
       );
     } catch (error) {
       console.error(
@@ -95,7 +95,7 @@ export const CustomerHome = () => {
 
       setError(
         error.message ||
-          "No se pudo cargar la información de la tienda."
+        "No se pudo cargar la información de la tienda."
       );
     } finally {
       setLoadingStore(false);
@@ -135,7 +135,7 @@ export const CustomerHome = () => {
 
       setError(
         error.message ||
-          "No se pudieron cargar las categorías."
+        "No se pudieron cargar las categorías."
       );
     }
   };
@@ -168,7 +168,7 @@ export const CustomerHome = () => {
 
       setError(
         error.message ||
-          "No se pudieron cargar los productos."
+        "No se pudieron cargar los productos."
       );
     } finally {
       setLoadingProducts(false);
@@ -270,7 +270,7 @@ export const CustomerHome = () => {
   // Agregar o quitar favorito
   const toggleFavorite = async (productId) => {
     if (!userId) {
-      alert(
+      toast.warn(
         "Debes iniciar sesión para usar favoritos"
       );
       return;
@@ -321,9 +321,9 @@ export const CustomerHome = () => {
         error
       );
 
-      alert(
+      toast.error(
         error.message ||
-          "No se pudo modificar el favorito"
+        "No se pudo modificar el favorito"
       );
     }
   };
@@ -331,7 +331,7 @@ export const CustomerHome = () => {
   // Agregar producto al carrito
   const addToCart = async (productId) => {
     if (!userId) {
-      alert(
+      toast.warn(
         "Debes iniciar sesión para agregar productos al carrito"
       );
       return;
@@ -352,9 +352,9 @@ export const CustomerHome = () => {
         error
       );
 
-      alert(
+      toast.error(
         error.message ||
-          "No se pudo agregar el producto al carrito"
+        "No se pudo agregar el producto al carrito"
       );
     }
   };
@@ -525,7 +525,7 @@ export const CustomerHome = () => {
                   type="button"
                   className={
                     selectedCategory?.id ===
-                    category.id
+                      category.id
                       ? "store-category-button active"
                       : "store-category-button"
                   }
@@ -580,7 +580,7 @@ export const CustomerHome = () => {
             </div>
 
             {categories.length === 0 &&
-            !error ? (
+              !error ? (
               <div className="text-center py-5">
                 <i className="fa-solid fa-layer-group store-empty-icon mb-3" />
 
@@ -648,7 +648,7 @@ export const CustomerHome = () => {
                               toggleFavorite(
                                 product.id
                               )
-                              
+
                             }
                             title={
                               favoriteIds.includes(

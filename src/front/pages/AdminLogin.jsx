@@ -1,6 +1,7 @@
 
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 import { fetchLogin } from "../fetch.js";
 
 export const AdminLogin = () => {
@@ -24,7 +25,7 @@ export const AdminLogin = () => {
         e.preventDefault();
 
         if (!inputData.email.trim() || !inputData.password.trim()) {
-            alert("Por favor completa todos los campos");
+            toast.warn("Por favor completa todos los campos");
             return;
         }
 
@@ -35,7 +36,7 @@ export const AdminLogin = () => {
             });
 
             if (data.user?.role !== "admin") {
-                alert("Estas credenciales no pertenecen a una cuenta de administrador");
+                toast.error("Estas credenciales no pertenecen a una cuenta de administrador");
                 return;
             }
 
@@ -50,7 +51,7 @@ export const AdminLogin = () => {
             navigate("/admin-shop");
         } catch (error) {
             console.error("Error al iniciar sesión como administrador:", error);
-            alert(error.message || "Correo o contraseña incorrectos");
+            toast.error(error.message || "Correo o contraseña incorrectos");
         }
     };
 

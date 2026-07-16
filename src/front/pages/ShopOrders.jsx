@@ -1,6 +1,8 @@
 
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { toast } from "react-toastify";
+
 import {
     fetchStoreOrders,
     fetchUpdateOrderStatus,
@@ -68,9 +70,11 @@ const ShopOrders = () => {
                     order.id === orderId ? updatedOrder : order
                 )
             );
+
+            toast.success("Estado del pedido actualizado");
         } catch (error) {
             console.error("Error al actualizar el pedido:", error);
-            alert(error.message || "No se pudo actualizar el pedido");
+            toast.error(error.message || "No se pudo actualizar el pedido");
         } finally {
             setUpdatingOrderId(null);
         }

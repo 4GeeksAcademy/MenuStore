@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 import { fetchLogin } from "../fetch.js";
 import useGlobalReducer from "../hooks/useGlobalReducer.jsx";
 
@@ -29,7 +30,7 @@ export const Login = () => {
       !inputData.email.trim() ||
       !inputData.password.trim()
     ) {
-      alert("Por favor completa todos los campos");
+      toast.warn("Por favor completa todos los campos");
       return;
     }
 
@@ -41,7 +42,7 @@ export const Login = () => {
 
       // Esta página es solamente para clientes
       if (data.user?.role !== "client") {
-        alert(
+        toast.error(
           "Estas credenciales no pertenecen a una cuenta de cliente"
         );
         return;
@@ -62,9 +63,9 @@ export const Login = () => {
     } catch (error) {
       console.error("Error al iniciar sesión:", error);
 
-      alert(
+      toast.error(
         error.message ||
-          "Correo o contraseña incorrectos"
+        "Correo o contraseña incorrectos"
       );
     }
   };

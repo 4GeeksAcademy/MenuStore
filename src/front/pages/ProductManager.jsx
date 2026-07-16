@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { toast } from "react-toastify";
 
 import {
   fetchProductsByCategory,
@@ -41,6 +42,7 @@ export const ProductManager = () => {
     } catch (error) {
       console.error("Error al cargar categorías:", error);
       setCategories([]);
+      toast.error(error.message || "No se pudieron cargar las categorías");
     }
   };
 
@@ -55,6 +57,7 @@ export const ProductManager = () => {
     } catch (error) {
       console.error("Error al cargar la categoría:", error);
       setCurrentCategoryName("Categoría");
+      toast.error(error.message || "No se pudo cargar la categoría");
     }
   };
 
@@ -68,7 +71,7 @@ export const ProductManager = () => {
     } catch (error) {
       console.error("Error al cargar productos:", error);
       setProducts([]);
-      alert(error.message || "No se pudieron cargar los productos");
+      toast.error(error.message || "No se pudieron cargar los productos");
     } finally {
       setLoading(false);
     }
@@ -103,10 +106,11 @@ export const ProductManager = () => {
       const imageUrl = await fetchUploadImage(file);
 
       setProductImage(imageUrl);
+      toast.success("Imagen cargada correctamente");
     } catch (error) {
       console.error("Error al subir imagen:", error);
 
-      alert(
+      toast.error(
         error.message ||
         "No se pudo subir la imagen"
       );
@@ -118,12 +122,12 @@ export const ProductManager = () => {
 
   const saveProduct = async () => {
     if (!productName.trim()) {
-      alert("El nombre del producto es obligatorio");
+      toast.warn("El nombre del producto es obligatorio");
       return;
     }
 
     if (productPrice === "" || Number(productPrice) < 0) {
-      alert("Ingresa un precio válido");
+      toast.warn("Ingresa un precio válido");
       return;
     }
 
@@ -150,19 +154,19 @@ export const ProductManager = () => {
           )
         );
 
-        alert("Producto actualizado correctamente");
+        toast.success("Producto actualizado correctamente");
       } else {
         const newProduct = await fetchCreateProduct(productData);
 
         setProducts([...products, newProduct]);
 
-        alert("Producto guardado correctamente");
+        toast.success("Producto guardado correctamente");
       }
 
       clearForm();
     } catch (error) {
       console.error("Error al guardar producto:", error);
-      alert(error.message || "No se pudo guardar el producto");
+      toast.error(error.message || "No se pudo guardar el producto");
     }
   };
 
@@ -197,12 +201,12 @@ export const ProductManager = () => {
         clearForm();
       }
 
-      alert(
+      toast.success(
         data.message || "Producto eliminado correctamente"
       );
     } catch (error) {
       console.error("Error al eliminar producto:", error);
-      alert(error.message || "No se pudo eliminar el producto");
+      toast.error(error.message || "No se pudo eliminar el producto");
     }
   };
 

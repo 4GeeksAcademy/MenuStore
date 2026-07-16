@@ -1,5 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
+import { toast } from "react-toastify";
 import { fetchRegister } from "../fetch.js";
 
 const Register = () => {
@@ -30,12 +31,12 @@ const Register = () => {
       !inputData.email.trim() ||
       !inputData.password.trim()
     ) {
-      alert("Por favor completa todos los campos");
+      toast.warn("Por favor completa todos los campos");
       return;
     }
 
     if (inputData.password.length < 6) {
-      alert("La contraseña debe tener al menos 6 caracteres");
+      toast.warn("La contraseña debe tener al menos 6 caracteres");
       return;
     }
 
@@ -48,12 +49,12 @@ const Register = () => {
         password: inputData.password
       });
 
-      alert("Usuario registrado correctamente");
+      toast.success("Usuario registrado correctamente");
       navigate("/login");
     } catch (error) {
       console.error("Error al registrar usuario:", error);
 
-      alert(
+      toast.error(
         error.message ||
         "No se pudo registrar el usuario"
       );
