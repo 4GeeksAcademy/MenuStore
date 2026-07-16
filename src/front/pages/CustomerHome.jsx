@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import {toast} from 'react-toastify'
 
 import MiniUser from "./MiniUser";
 import useGlobalReducer from "../hooks/useGlobalReducer.jsx";
@@ -15,8 +16,12 @@ import {
   fetchUserCart,
 } from "../fetch.js";
 
+
+
 export const CustomerHome = () => {
   const { dispatch } = useGlobalReducer();
+
+  const {isActive, setIsActive} = useState(false)
 
   // Usuario guardado en localStorage
   const savedUser = localStorage.getItem("user");
@@ -339,9 +344,8 @@ export const CustomerHome = () => {
       // del carrito en MiniUser
       await syncCart();
 
-      alert(
-        "Producto agregado al carrito correctamente"
-      );
+      toast.success("¡Agregado correctamente!");
+
     } catch (error) {
       console.error(
         "Error al agregar producto al carrito:",
@@ -644,6 +648,7 @@ export const CustomerHome = () => {
                               toggleFavorite(
                                 product.id
                               )
+                              
                             }
                             title={
                               favoriteIds.includes(
