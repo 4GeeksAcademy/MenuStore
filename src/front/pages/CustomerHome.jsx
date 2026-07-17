@@ -21,8 +21,6 @@ import {
 export const CustomerHome = () => {
   const { dispatch } = useGlobalReducer();
 
-  const { isActive, setIsActive } = useState(false)
-
   // Usuario guardado en localStorage
   const savedUser = localStorage.getItem("user");
 
